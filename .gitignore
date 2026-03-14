@@ -1,0 +1,130 @@
+########################################
+# GENERAL
+########################################
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files (IMPORTANT - contains secrets)
+.env
+.env.*
+*.env
+
+########################################
+# NODE.JS
+########################################
+
+node_modules/
+npm-debug.log*
+package-lock.json
+
+# Build outputs
+dist/
+build/
+out/
+
+########################################
+# PYTHON
+########################################
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# Python packaging
+build/
+dist/
+*.egg-info/
+
+# Jupyter notebooks
+.ipynb_checkpoints
+
+########################################
+# WEB3 / BLOCKCHAIN
+########################################
+
+# Private keys
+*.key
+*.pem
+*.secret
+wallet.json
+
+# Ganache / Hardhat artifacts
+artifacts/
+cache/
+deployments/
+
+########################################
+# ZKP / CIRCOM / SNARKJS
+########################################
+
+# Circom compilation files
+*.r1cs
+*.sym
+*.wasm
+
+# ZKP proving keys
+*.zkey
+*.ptau
+
+# Witness files
+witness.wtns
+
+# Proof files
+proof.json
+public.json
+
+########################################
+# gRPC
+########################################
+
+# Generated files
+*_pb2.py
+*_pb2_grpc.py
+*_pb.go
+*.pb.cc
+*.pb.h
+
+########################################
+# IDE / EDITORS
+########################################
+
+# VS Code
+.vscode/
+
+# JetBrains
+.idea/
+
+# Vim
+*.swp
+
+########################################
+# TEST / COVERAGE
+########################################
+
+coverage/
+htmlcov/
+.pytest_cache/
+
+########################################
+# TEMP FILES
+########################################
+
+tmp/
+temp/
+*.tmp
+*.bak

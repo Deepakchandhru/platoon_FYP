@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<routes>
+    <!-- Define routes only -->
+    <vType id="car" accel="2.6" decel="4.5" sigma="0.5" length="4.5" maxSpeed="13.9"/>
+
+    <route id="main_route" edges="main_0 main_1 main_2 main_3"/>
+    <route id="side1_route" edges="side1 side1_connector main_1 main_2 main_3"/>
+    <route id="side2_route" edges="side2 side2_connector main_2 main_3"/>
+</routes>

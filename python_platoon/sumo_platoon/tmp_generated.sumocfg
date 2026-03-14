@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <input>
+    <net-file value="guindy.net.xml"/>
+    <route-files value="route.rou.xml"/>
+    <additional-files value="rsu.add.xml"/>
+  </input>
+  <time>
+    <begin value="0"/>
+    <end value="270"/>
+    <step-length value="0.1"/>
+  </time>
+  <gui>
+    <start value="true"/>
+  </gui>
+</configuration>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<edges>
+    <!-- Main highway with 4 wide lanes -->
+    <edge id="main_0" from="n0" to="n1" numLanes="4" speed="27.78" priority="5" spreadType="center"/>
+    <edge id="main_1" from="n1" to="n2" numLanes="4" speed="27.78" priority="5" spreadType="center"/>
+    <edge id="main_2" from="n2" to="n3" numLanes="4" speed="27.78" priority="5" spreadType="center"/>
+    <edge id="main_3" from="n3" to="n4" numLanes="4" speed="27.78" priority="5" spreadType="center"/>
+
+    <!-- Side approach roads with 3 wide lanes -->
+    <edge id="side1" from="s1a" to="s1b" numLanes="3" speed="22.22" priority="4" spreadType="center"/>
+    <edge id="side1_connector" from="s1b" to="n1" numLanes="3" speed="22.22" priority="4" spreadType="center"/>
+
+    <edge id="side2" from="s2a" to="s2b" numLanes="3" speed="22.22" priority="4" spreadType="center"/>
+    <edge id="side2_connector" from="s2b" to="n3" numLanes="3" speed="22.22" priority="4" spreadType="center"/>
+</edges>

@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package platoon;
+
+// =====================
+//  VEHICLE AUTH SERVICE
+// =====================
+service PlatoonService {
+
+  // Register vehicle commitment in system
+  rpc RegisterVehicle (RegisterRequest)
+      returns (RegisterResponse);
+
+  // ZKP-based authentication for platoon join
+  rpc AuthVehicle (AuthRequest)
+      returns (AuthResponse);
+}
+
+// =====================
+//  REGISTER
+// =====================
+message RegisterRequest {
+  // Private vehicle secret (used only to generate commitment)
+  string vehicle_secret = 1;
+
+  // Manufacturer-issued signature
+  string manufacturer_signature = 2;
+}
+
+message RegisterResponse {
+  // Registration status
+  string status = 1;
+
+  // Stored Poseidon commitment
+  string commitment = 2;
+}
+
+// =====================
+//  AUTHENTICATION
+// =====================
+message AuthRequest {
+
+  // Commitment to identify registered vehicle
+  string commitment = 1;
+
+  // Private inputs (used by prover only)
+  string vehicle_secret = 2;
+  string manufacturer_signature = 3;
+
+  // Capability & trust metrics
+  int32 capability_score = 4;
+  int32 trust_token = 5;
+}
+
+message AuthResponse {
+  // APPROVED / REJECTED
+  string status = 1;
+}

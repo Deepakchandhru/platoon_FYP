@@ -1,0 +1,129 @@
+syntax = "proto3";
+
+package platoon;
+
+import "google/protobuf/timestamp.proto";
+
+service PlatoonService {
+
+  // Register vehicle commitment in system
+  rpc RegisterVehicle (RegisterRequest)
+      returns (RegisterResponse);
+
+  // ZKP-based authentication for platoon join
+  rpc AuthVehicle (AuthRequest)
+      returns (AuthResponse);
+
+  // Platoon management
+  rpc JoinPlatoon (JoinRequest)
+      returns (JoinResponse);
+
+  rpc LeavePlatoon (LeaveRequest)
+      returns (LeaveResponse);
+
+  rpc MergePlatoon (MergeRequest)
+      returns (MergeResponse);
+
+  rpc ListPlatoons (ListPlatoonsRequest)
+      returns (PlatoonList);
+
+  rpc WatchPlatoons (WatchRequest)
+      returns (stream PlatoonEvent);
+}
+
+message RegisterRequest {
+  string vehicle_secret = 1;
+  string manufacturer_signature = 2;
+}
+
+message RegisterResponse {
+  string status = 1;
+  string commitment = 2;
+}
+
+message AuthRequest {
+  string commitment = 1;
+  string vehicle_secret = 2;
+  string manufacturer_signature = 3;
+  int32 capability_score = 4;
+  int32 trust_token = 5;
+}
+
+message AuthResponse {
+  string status = 1;
+}
+
+message JoinRequest {
+  string commitment = 1;      // vehicle commitment (replaces plate_number)
+  string pid = 2;             
+}
+
+message JoinResponse {
+  bool ok = 1;
+  string pid = 2;
+  string message = 3;
+}
+
+message LeaveRequest {
+  string commitment = 1;      // vehicle commitment
+}
+
+message LeaveResponse {
+  bool ok = 1;
+  string message = 2;
+}
+
+message MergeRequest {
+  string commitment = 1;      // requester commitment (must be leader of src)
+  string src_pid = 2;
+  string dst_pid = 3;
+}
+
+message MergeResponse {
+  bool ok = 1;
+  string dst_pid = 2;
+  string message = 3;
+}
+
+message PlatoonMember {
+  string commitment = 1;      // vehicle commitment
+  bool is_leader = 2;
+  int32 position = 3;
+  google.protobuf.Timestamp joined_at = 4;
+}
+
+message Platoon {
+  string pid = 1;
+  google.protobuf.Timestamp created_at = 2;
+  repeated PlatoonMember members = 3;
+  double speed = 4;        
+}
+
+message PlatoonList {
+  repeated Platoon platoons = 1;
+}
+
+message ListPlatoonsRequest {}
+
+message WatchRequest {
+  repeated string pids = 1;   
+}
+
+message PlatoonEvent {
+  enum EventType {
+    UNKNOWN = 0;
+    VEHICLE_REGISTERED = 1;
+    PLATOON_JOINED = 2;
+    PLATOON_LEFT = 3;
+    PLATOON_MERGED = 4;
+    PLATOON_SPLIT = 5;
+    SPEED_UPDATE = 6;
+  }
+  EventType type = 1;
+  string pid = 2;
+  string actor_id = 3;        // commitment of acting vehicle
+  google.protobuf.Timestamp ts = 4;
+  string message = 5;
+  string target_pid = 6;
+  Platoon platoon = 7;
+}

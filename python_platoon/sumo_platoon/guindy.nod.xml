@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nodes>
+    <!-- Main highway nodes -->
+    <node id="n0" x="0.0" y="0.0" type="priority"/>
+    <node id="n1" x="2000.0" y="400.0" type="priority"/>
+    <node id="n2" x="4400.0" y="1600.0" type="priority"/>
+    <node id="n3" x="6600.0" y="3600.0" type="priority"/>
+    <node id="n4" x="9000.0" y="5200.0" type="priority"/>
+
+    <!-- Side road 1 nodes -->
+    <node id="s1a" x="1600.0" y="1200.0" type="priority"/>
+    <node id="s1b" x="2000.0" y="800.0" type="priority"/>
+
+    <!-- Side road 2 nodes -->
+    <node id="s2a" x="6400.0" y="4400.0" type="priority"/>
+    <node id="s2b" x="6600.0" y="4000.0" type="priority"/>
+</nodes>
