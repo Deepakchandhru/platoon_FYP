@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Vehicle routes and definitions for CATS simulation -->
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+
+    <!-- Vehicle type definition -->
+    <vType id="platoon_car" accel="2.6" decel="4.5" sigma="0.0" length="5.0" minGap="2.5" maxSpeed="33.33" 
+           speedFactor="1.0" speedDev="0.0" carFollowModel="CACC" tau="1.0"/>
+
+    <!-- Route definition (single highway) -->
+    <route id="highway_route" edges="highway"/>
+
+    <!-- Platoon vehicles (10 vehicles total) -->
+    <!-- Vehicles 0-8: Honest vehicles -->
+    <vehicle id="veh_0" type="platoon_car" route="highway_route" depart="0.0" departLane="0" departPos="0" departSpeed="25.0" color="0,1,0"/>
+    <vehicle id="veh_1" type="platoon_car" route="highway_route" depart="0.5" departLane="0" departPos="0" departSpeed="25.0" color="0,1,0"/>
+    <vehicle id="veh_2" type="platoon_car" route="highway_route" depart="1.0" departLane="0" departPos="0" departSpeed="25.0" color="0,1,0"/>
+    <vehicle id="veh_3" type="platoon_car" route="highway_route" depart="1.5" departLane="0" departPos="0" departSpeed="25.0" color="0,1,0"/>
+    <vehicle id="veh_4" type="platoon_car" route="highway_route" depart="2.0" departLane="0" departPos="0" departSpeed="25.0" color="0,1,0"/>
+    <vehicle id="veh_5" type="platoon_car" route="highway_route" depart="2.5" departLane="0" departPos="0" departSpeed="25.0" color="0,1,0"/>
+    <vehicle id="veh_6" type="platoon_car" route="highway_route" depart="3.0" departLane="0" departPos="0" departSpeed="25.0" color="0,1,0"/>
+    <vehicle id="veh_7" type="platoon_car" route="highway_route" depart="3.5" departLane="0" departPos="0" departSpeed="25.0" color="0,1,0"/>
+    <vehicle id="veh_8" type="platoon_car" route="highway_route" depart="4.0" departLane="0" departPos="0" departSpeed="25.0" color="0,1,0"/>
+    
+    <!-- Vehicle 9: Malicious vehicle (last in platoon) -->
+    <vehicle id="veh_9" type="platoon_car" route="highway_route" depart="4.5" departLane="0" departPos="0" departSpeed="25.0" color="1,0,0"/>
+
+</routes>
+

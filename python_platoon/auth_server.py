@@ -5,6 +5,8 @@ import platoon_pb2_grpc
 import asyncpg
 import asyncio
 import requests
+from web3 import Web3
+from solcx import compile_source, set_solc_version
 
 NODE_URL = "http://localhost:4000"
 
@@ -15,6 +17,35 @@ DB_CONFIG = {
     "host": "localhost",
     "port": 5432
 }
+
+# Blockchain setup
+set_solc_version("0.8.17")
+w3 = Web3(Web3.HTTPProvider("http://127.0.0.1:7545"))
+if not w3.is_connected():
+    raise ConnectionError("Unable to connect to blockchain provider")
+
+# Load and compile contract
+def load_contract_source():
+    with open("MerkleCommitment.sol", "r", encoding="utf-8") as f:
+        return f.read()
+
+def compile_contract(source):
+    compiled = compile_source(source)
+    _, contract_interface = compiled.popitem()
+    return contract_interface['abi'], contract_interface['bin']
+
+source = load_contract_source()
+abi, bytecode = compile_contract(source)
+
+# Deploy contract (run once, or set address)
+def deploy_contract():
+    Contract = w3.eth.contract(abi=abi, bytecode=bytecode)
+    tx_hash = Contract.constructor().transact({"from": w3.eth.accounts[0], "gas": 3000000})
+    receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+    return receipt.contractAddress
+
+contract_address = deploy_contract()  # Or set to existing address
+contract = w3.eth.contract(address=contract_address, abi=abi)
 
 async def get_conn():
     return await asyncpg.connect(**DB_CONFIG)
@@ -32,6 +63,18 @@ async def get_commitments():
     rows = await conn.fetch("SELECT commitment FROM authorized_vehicles ORDER BY id")
     await conn.close()
     return [str(r["commitment"]) for r in rows]
+
+def insert_commitment_blockchain(commitment):
+    tx_hash = contract.functions.addCommitment(Web3.to_bytes(int(commitment)), 80, 80).transact({"from": w3.eth.accounts[0]})
+    w3.eth.wait_for_transaction_receipt(tx_hash)
+
+def get_commitments_blockchain():
+    commitments = contract.functions.getCommitments().call()
+    return [str(int.from_bytes(c, 'big')) for c in commitments]
+
+def get_vehicle_data(commitment):
+    cap, trust = contract.functions.getVehicleData(Web3.to_bytes(int(commitment))).call()
+    return cap, trust
 
 def build_merkle(commitment, all_commitments):
     idx = all_commitments.index(str(commitment))
@@ -66,7 +109,6 @@ def build_merkle(commitment, all_commitments):
         "merkle_root": root
     }
 
-
 class PlatoonService(platoon_pb2_grpc.PlatoonServiceServicer):
 
     def RegisterVehicle(self, request, context):
@@ -81,7 +123,7 @@ class PlatoonService(platoon_pb2_grpc.PlatoonServiceServicer):
         )
 
         commitment = resp.json()["commitment"]
-        asyncio.run(insert_commitment(commitment))
+        insert_commitment_blockchain(commitment)
 
         return platoon_pb2.RegisterResponse(
             status="REGISTERED",
@@ -89,12 +131,13 @@ class PlatoonService(platoon_pb2_grpc.PlatoonServiceServicer):
         )
 
     def AuthVehicle(self, request, context):
-        all_commitments = asyncio.run(get_commitments())
+        all_commitments = get_commitments_blockchain()
         commitment = str(request.commitment)
 
         if commitment not in all_commitments:
             return platoon_pb2.AuthResponse(status="REJECTED")
 
+        capability_score, trust_token = get_vehicle_data(commitment)
         merkle = build_merkle(commitment, all_commitments)
 
         zkp_input = {
@@ -103,8 +146,8 @@ class PlatoonService(platoon_pb2_grpc.PlatoonServiceServicer):
             "pathElements": merkle["pathElements"],
             "pathIndices": merkle["pathIndices"],
             "merkle_root": merkle["merkle_root"],
-            "capability_score": request.capability_score,
-            "trust_token": request.trust_token,
+            "capability_score": capability_score,
+            "trust_token": trust_token,
             "capability_threshold": 60,
             "trust_threshold": 50
         }
@@ -130,3 +173,4 @@ def serve():
 
 if __name__ == "__main__":
     serve()
+    print("gRPC server running on port 50051")

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<additional>
+    <!-- RSU units as polygons for visualization -->
+    <poly id="rsu1" color="green" layer="1" shape="1990,1990 1990,2010 2010,2010 2010,1990"/>
+    <poly id="rsu2" color="green" layer="1" shape="2990,1990 2990,2010 3010,2010 3010,1990"/>
+    <poly id="rsu3" color="green" layer="1" shape="3990,1990 3990,2010 4010,2010 4010,1990"/>
+    <poly id="rsu4" color="green" layer="1" shape="4990,1990 4990,2010 5010,2010 5010,1990"/>
+    <poly id="rsu5" color="green" layer="1" shape="5990,1990 5990,2010 6010,2010 6010,1990"/>
+</additional>

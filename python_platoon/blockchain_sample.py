@@ -133,7 +133,7 @@ def main():
     deployer = accounts[0]
 
     # Replace with your Ganache private key or set via env var PRIVATE_KEY
-    private_key = os.environ.get("PRIVATE_KEY") or "0xf4419e2bbdf7ed0ef9ceeb0301304508d02ef053592b94cebd7b708af09bcb84"
+    private_key = os.environ.get("PRIVATE_KEY") or "0x8122b36921f7a841a77edc04f7758a9ddbbc88c6f6bd4e1a620a6c73c1516ce5"
     if private_key:
         acct = w3.eth.account.from_key(private_key).address
         if acct.lower() != deployer.lower():

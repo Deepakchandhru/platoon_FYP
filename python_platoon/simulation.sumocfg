@@ -1,11 +1,13 @@
 <configuration>
+
     <input>
         <net-file value="chennai.net.xml"/>
-        <route-files value="routes.rou.xml"/>
+        <route-files value="base_routes.rou.xml"/>
     </input>
 
     <time>
         <begin value="0"/>
-        <end value="3600"/>
+        <end value="500"/>
     </time>
+
 </configuration>

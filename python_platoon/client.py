@@ -102,11 +102,8 @@ def main():
                     print(f"Error computing commitment: {e}")
                     continue
 
-            capability_score = input("Enter capability score (default 80): ").strip()
-            trust_token = input("Enter trust token (default 70): ").strip()
-
-            capability_score = int(capability_score) if capability_score else 80
-            trust_token = int(trust_token) if trust_token else 70
+            capability_score = 80
+            trust_token = 80
 
             print("\nAuthenticating with ZKP (secrets not sent to server)...")
 

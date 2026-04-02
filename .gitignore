@@ -127,4 +127,4 @@ htmlcov/
 tmp/
 temp/
 *.tmp
-*.bak
+*.bak-

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2026-03-14 19:59:57 by Eclipse SUMO duarouter Version 1.24.0
+<duarouterConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/duarouterConfiguration.xsd">
+
+    <input>
+        <net-file value="chennai.net.xml"/>
+        <route-files value="base_trips.xml"/>
+    </input>
+
+    <output>
+        <output-file value="base_routes.rou.xml"/>
+    </output>
+
+</duarouterConfiguration>
+-->
+
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+    <vType id="car" accel="2.6" decel="4.5" sigma="0.5" length="5" maxSpeed="70"/>
+    <route id="platoon1" edges="1015894852#1 -1192341483"/>
+    <route id="join1" edges="1192341483 -1192341483"/>
+    <route id="platoon2" edges="1015894852#0 1015894852#1"/>
+    <route id="join2" edges="27442429#1 1015894852#1"/>
+</routes>

@@ -1,0 +1,15 @@
+<configuration>
+
+    <input>
+        <net-file value="chennai.net.xml"/>
+        <route-files value="zkp_routes.rou.xml"/>
+        <additional-files value="zkp_additional.xml"/>
+    </input>
+
+    <time>
+        <begin value="0"/>
+        <end value="600"/>
+        <step-length value="0.1"/>
+    </time>
+
+</configuration>

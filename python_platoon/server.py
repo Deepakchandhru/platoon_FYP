@@ -10,6 +10,8 @@ import time
 import queue
 import threading
 from google.protobuf.timestamp_pb2 import Timestamp
+from web3 import Web3
+from solcx import compile_source, set_solc_version
 
 NODE_URL = "http://localhost:4000"
 
@@ -20,6 +22,35 @@ DB_CONFIG = {
     "host": "localhost",
     "port": 5432
 }
+
+# Blockchain setup
+set_solc_version("0.8.17")
+w3 = Web3(Web3.HTTPProvider("http://127.0.0.1:7545"))
+if not w3.is_connected():
+    raise ConnectionError("Unable to connect to blockchain provider")
+
+# Load and compile contract
+def load_contract_source():
+    with open("cats.sol", "r", encoding="utf-8") as f:
+        return f.read()
+
+def compile_contract(source):
+    compiled = compile_source(source)
+    _, contract_interface = compiled.popitem()
+    return contract_interface['abi'], contract_interface['bin']
+
+source = load_contract_source()
+abi, bytecode = compile_contract(source)
+
+# Deploy contract (run once, or set address)
+def deploy_contract():
+    Contract = w3.eth.contract(abi=abi, bytecode=bytecode)
+    tx_hash = Contract.constructor().transact({"from": w3.eth.accounts[0], "gas": 3000000})
+    receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+    return receipt.contractAddress
+
+contract_address = deploy_contract()  # Or set to existing address
+contract = w3.eth.contract(address=contract_address, abi=abi)
 
 PLATOONS = {}
 
@@ -41,6 +72,55 @@ def now_timestamp() -> Timestamp:
     ts.seconds = s
     ts.nanos = int((time.time() - s) * 1e9)
     return ts
+
+def insert_commitment_blockchain(commitment):
+    tx_hash = contract.functions.addCommitment(Web3.to_bytes(int(commitment)), 80, 80).transact({"from": w3.eth.accounts[0]})
+    w3.eth.wait_for_transaction_receipt(tx_hash)
+
+def get_commitments_blockchain():
+    commitments = contract.functions.getCommitments().call()
+    return [str(int.from_bytes(c, 'big')) for c in commitments]
+
+def get_vehicle_data(commitment):
+    cap, trust = contract.functions.getVehicleData(Web3.to_bytes(int(commitment))).call()
+    return cap, trust
+
+# New blockchain functions for reputation, votes, flags
+def update_reputation_blockchain(commitment, score, trust_state):
+    """Update final reputation state on blockchain"""
+    tx_hash = contract.functions.updateReputation(Web3.to_bytes(int(commitment)), score, trust_state).transact({"from": w3.eth.accounts[0]})
+    receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+    return receipt.transactionHash.hex()
+
+def get_reputation_blockchain(commitment):
+    score, trust_state, last_updated = contract.functions.getReputation(Web3.to_bytes(int(commitment))).call()
+    return score, trust_state, last_updated
+
+def record_vote_blockchain(target_commitment, vote_type, reason):
+    """Record a vote on blockchain"""
+    tx_hash = contract.functions.recordVote(Web3.to_bytes(int(target_commitment)), vote_type, reason).transact({"from": w3.eth.accounts[0]})
+    receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+    return receipt.transactionHash.hex()
+
+def get_vote_count_blockchain():
+    return contract.functions.getVoteCount().call()
+
+def get_vote_blockchain(index):
+    voter, target, vote_type, timestamp, reason = contract.functions.getVote(index).call()
+    return voter, str(int.from_bytes(target, 'big')), vote_type, timestamp, reason
+
+def add_flag_blockchain(vehicle_commitment, flag_type, window_id):
+    """Add flag anchor on blockchain (optional)"""
+    tx_hash = contract.functions.addFlag(Web3.to_bytes(int(vehicle_commitment)), flag_type, window_id).transact({"from": w3.eth.accounts[0]})
+    receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+    return receipt.transactionHash.hex()
+
+def get_flag_count_blockchain():
+    return contract.functions.getFlagCount().call()
+
+def get_flag_blockchain(index):
+    vehicle, flag_type, window_id, timestamp = contract.functions.getFlag(index).call()
+    return str(int.from_bytes(vehicle, 'big')), flag_type, window_id, timestamp
 
 async def get_conn():
     return await asyncpg.connect(**DB_CONFIG)
@@ -67,6 +147,89 @@ async def commitment_exists(commitment):
     )
     await conn.close()
     return row is not None
+
+# New PostgreSQL functions for reputation system
+async def init_vehicle_reputation(vehicle_id: str, initial_score: int = 0):
+    conn = await get_conn()
+    await conn.execute("""
+        INSERT INTO reputation (vehicle_id, score, trust_state, created_at, last_updated)
+        VALUES ($1, $2, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ON CONFLICT (vehicle_id) DO NOTHING
+    """, vehicle_id, initial_score)
+    await conn.close()
+
+async def get_vehicle_reputation(vehicle_id: str):
+    conn = await get_conn()
+    row = await conn.fetchrow("""
+        SELECT vehicle_id, score, trust_state, last_updated, created_at, blockchain_tx_hash
+        FROM reputation WHERE vehicle_id = $1
+    """, vehicle_id)
+    await conn.close()
+    return dict(row) if row else None
+
+async def update_vehicle_reputation(vehicle_id: str, new_score: int, new_trust_state: int, blockchain_tx_hash: str = None):
+    conn = await get_conn()
+    await conn.execute("""
+        UPDATE reputation 
+        SET score = $2, trust_state = $3, last_updated = CURRENT_TIMESTAMP, blockchain_tx_hash = $4
+        WHERE vehicle_id = $1
+    """, vehicle_id, new_score, new_trust_state, blockchain_tx_hash)
+    await conn.close()
+
+async def record_vote_history(voter_id: str, target_id: str, vote_type: str):
+    conn = await get_conn()
+    await conn.execute("""
+        INSERT INTO vote_history (voter_id, target_id, vote_type, timestamp)
+        VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+    """, voter_id, target_id, vote_type)
+    await conn.close()
+
+async def get_recent_vote_history(voter_id: str, time_window_seconds: float):
+    conn = await get_conn()
+    rows = await conn.fetch("""
+        SELECT voter_id, target_id, vote_type, timestamp
+        FROM vote_history 
+        WHERE voter_id = $1 AND timestamp > (CURRENT_TIMESTAMP - INTERVAL '%s seconds')
+        ORDER BY timestamp DESC
+    """ % time_window_seconds, voter_id)
+    await conn.close()
+    return [dict(row) for row in rows]
+
+async def add_flag(vehicle_id: str, flag_type: str, window_id: int, blockchain_tx_hash: str = None):
+    conn = await get_conn()
+    await conn.execute("""
+        INSERT INTO flags (vehicle_id, flag_type, window_id, timestamp, blockchain_tx_hash)
+        VALUES ($1, $2, $3, CURRENT_TIMESTAMP, $4)
+    """, vehicle_id, flag_type, window_id, blockchain_tx_hash)
+    await conn.close()
+
+async def get_active_flags(vehicle_id: str):
+    conn = await get_conn()
+    rows = await conn.fetch("""
+        SELECT id, vehicle_id, flag_type, window_id, timestamp, blockchain_tx_hash
+        FROM flags 
+        WHERE vehicle_id = $1 AND expired = FALSE
+        ORDER BY timestamp DESC
+    """, vehicle_id)
+    await conn.close()
+    return [dict(row) for row in rows]
+
+async def record_broadcast_message(sender_id: str, msg_type: str, sequence_num: int, raw_json: str):
+    conn = await get_conn()
+    await conn.execute("""
+        INSERT INTO broadcast_messages (sender_id, msg_type, timestamp, sequence_num, raw_json)
+        VALUES ($1, $2, CURRENT_TIMESTAMP, $3, $4)
+    """, sender_id, msg_type, sequence_num, raw_json)
+    await conn.close()
+
+async def get_all_reputations():
+    conn = await get_conn()
+    rows = await conn.fetch("""
+        SELECT vehicle_id, score, trust_state, last_updated, created_at, blockchain_tx_hash
+        FROM reputation ORDER BY score DESC
+    """)
+    await conn.close()
+    return [dict(row) for row in rows]
 
 
 def build_merkle(commitment, all_commitments):
@@ -190,14 +353,14 @@ class PlatoonService(platoon_pb2_grpc.PlatoonServiceServicer):
         commitment = str(resp.json()["commitment"])
 
         # Check if commitment already exists
-        if run_async(commitment_exists(commitment)):
+        if commitment in get_commitments_blockchain():
             return platoon_pb2.RegisterResponse(
                 status="ALREADY_REGISTERED",
                 commitment=commitment
             )
 
-        # Store commitment in DB
-        run_async(insert_commitment(commitment))
+        # Store commitment in blockchain
+        insert_commitment_blockchain(commitment)
 
         event = create_platoon_event(
             platoon_pb2.PlatoonEvent.VEHICLE_REGISTERED,
@@ -213,33 +376,18 @@ class PlatoonService(platoon_pb2_grpc.PlatoonServiceServicer):
         )
 
     def AuthVehicle(self, request, context):
+        all_commitments = get_commitments_blockchain()
         commitment = str(request.commitment)
-        vehicle_secret = request.vehicle_secret
-        manufacturer_signature = request.manufacturer_signature
-        capability_score = request.capability_score
-        trust_token = request.trust_token
 
-        if not commitment or not vehicle_secret or not manufacturer_signature:
-            return platoon_pb2.AuthResponse(status="REJECTED")
-
-        # Get all commitments from DB
-        all_commitments = run_async(get_commitments())
-
-        # Check if commitment exists
         if commitment not in all_commitments:
             return platoon_pb2.AuthResponse(status="REJECTED")
 
-        # Build Merkle proof
-        try:
-            merkle = build_merkle(commitment, all_commitments)
-        except ValueError as e:
-            print(f"Merkle error: {e}")
-            return platoon_pb2.AuthResponse(status="REJECTED")
+        capability_score, trust_token = get_vehicle_data(commitment)
+        merkle = build_merkle(commitment, all_commitments)
 
-        # Prepare ZKP inputs (matches circuit signals)
         zkp_input = {
-            "vehicle_secret": vehicle_secret,
-            "manufacturer_signature": manufacturer_signature,
+            "vehicle_secret": request.vehicle_secret,
+            "manufacturer_signature": request.manufacturer_signature,
             "pathElements": merkle["pathElements"],
             "pathIndices": merkle["pathIndices"],
             "merkle_root": merkle["merkle_root"],
@@ -249,21 +397,12 @@ class PlatoonService(platoon_pb2_grpc.PlatoonServiceServicer):
             "trust_threshold": 50
         }
 
-        try:
-            resp = requests.post(
-                f"{NODE_URL}/zkp/verify-vehicle",
-                json=zkp_input
-            )
-        except Exception as e:
-            print(f"ZKP service error: {e}")
-            return platoon_pb2.AuthResponse(status="REJECTED")
+        resp = requests.post(
+            f"{NODE_URL}/zkp/verify-vehicle",
+            json=zkp_input
+        )
 
-        if resp.status_code != 200:
-            print(f"ZKP service error: {resp.text}")
-            return platoon_pb2.AuthResponse(status="REJECTED")
-
-        result = resp.json()
-        status = result.get("status", "REJECTED")
+        status = resp.json().get("status", "REJECTED")
 
         if status == "APPROVED":
             AUTHENTICATED_VEHICLES.add(commitment)

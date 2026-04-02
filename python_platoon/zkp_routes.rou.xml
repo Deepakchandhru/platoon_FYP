@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2026-03-15 by Eclipse SUMO duarouter Version 1.24.0
+<duarouterConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/duarouterConfiguration.xsd">
+
+    <input>
+        <net-file value="chennai.net.xml"/>
+        <route-files value="zkp_routes.rou.xml"/>
+    </input>
+
+    <output>
+        <output-file value="zkp_routes.rou.xml"/>
+    </output>
+
+</duarouterConfiguration>
+-->
+
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+    <vType id="car" accel="2.6" decel="4.5" sigma="0.5" length="5" maxSpeed="70"/>
+    <!-- Routes for ZKP-authenticated platoons -->
+    <route id="zkp_platoon1" edges="22688331#1 22688331#2 22688331#3 22688331#4 22688331#5 22688331#6 22688331#7 24730725#0 24730725#1 1427826037"/>
+    <route id="zkp_join1" edges="1192341483 1015894852#2"/>
+    <route id="zkp_platoon2" edges="1015894852#0 1015894852#1 1015894852#2"/>
+    <route id="zkp_join2" edges="27442429#1 1015894852#1"/>
+</routes>
