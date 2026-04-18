@@ -2,1464 +2,1174 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Secure Platoon Simulation Dashboard</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ZKP Platoon Security Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;700;900&family=Rajdhani:wght@400;500;600;700&display=swap');
-
 :root {
-  --bg:          #050c14;
-  --panel:       #091522;
-  --panel2:      #0d1e2e;
-  --border:      #1a3a55;
-  --accent:      #00d4ff;
-  --accent2:     #ff6b35;
-  --accent3:     #39ff6a;
-  --warn:        #ffcc00;
-  --danger:      #ff2d55;
-  --text:        #c8e0f0;
-  --muted:       #4a7090;
-  --glow:        0 0 18px rgba(0,212,255,0.35);
-  --glow2:       0 0 18px rgba(255,107,53,0.35);
-  --glow3:       0 0 18px rgba(57,255,106,0.35);
+  --bg-base: #050C14;
+  --bg-panel: #0B1523;
+  --bg-card: #0F1D2E;
+  --bg-card2: #131f30;
+  --border: rgba(255,255,255,0.06);
+  --border2: rgba(255,255,255,0.12);
+  --text-primary: #E8EDF5;
+  --text-secondary: #6B82A0;
+  --text-muted: #3D5068;
+  --cyan: #00C9E4;
+  --green: #00E4A0;
+  --amber: #F4A623;
+  --purple: #9B7CFF;
+  --red: #FF4D6A;
+  --pink: #FF6BAC;
+  --blue: #3B9EFF;
+  --teal: #1DDBBF;
+  --accent1: #00C9E4;
+  --step-active: #0F2A40;
+  --step-done: #0B2318;
+  --font-main: 'Space Grotesk', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; background: var(--bg-base); }
+body { font-family: var(--font-main); color: var(--text-primary); display: flex; flex-direction: column; }
+
+/* === TOP BAR === */
+.topbar {
+  height: 52px; flex-shrink: 0;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 20px; gap: 12px;
+}
+.logo-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 6px var(--cyan);
+}
+.logo-text { font-size: 13px; font-weight: 600; letter-spacing: 0.12em; color: var(--text-primary); }
+.logo-sub { font-size: 11px; color: var(--text-muted); letter-spacing: 0.08em; margin-left: 4px; }
+.topbar-spacer { flex: 1; }
+.sim-time { font-family: var(--font-mono); font-size: 13px; color: var(--text-secondary); }
+.sim-time span { color: var(--cyan); font-weight: 500; }
+
+/* === STATS BAR === */
+.statsbar {
+  height: 54px; flex-shrink: 0;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: stretch;
+}
+.stat-item {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: flex-start; justify-content: center;
+  padding: 0 20px;
+  border-right: 1px solid var(--border);
+  gap: 1px;
+}
+.stat-item:last-child { border-right: none; }
+.stat-val {
+  font-family: var(--font-mono); font-size: 17px; font-weight: 500;
+  line-height: 1; letter-spacing: 0.02em;
+  transition: all 0.4s ease;
+}
+.stat-label {
+  font-size: 9px; font-weight: 600; letter-spacing: 0.14em;
+  color: var(--text-muted); text-transform: uppercase;
+}
+.sv-cyan { color: var(--cyan); }
+.sv-green { color: var(--green); }
+.sv-amber { color: var(--amber); }
+.sv-purple { color: var(--purple); }
+.sv-red { color: var(--red); }
+.sv-pink { color: var(--pink); }
+.sv-teal { color: var(--teal); }
+
+/* === MAIN LAYOUT === */
+.main-layout {
+  flex: 1; display: flex; overflow: hidden;
 }
 
-*{margin:0;padding:0;box-sizing:border-box;}
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;overflow-x:hidden;}
+/* === LEFT SIDEBAR === */
+.sidebar {
+  width: 240px; flex-shrink: 0;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+}
+.sidebar-header {
+  padding: 12px 16px 8px;
+  font-size: 9px; font-weight: 600; letter-spacing: 0.14em;
+  color: var(--text-muted); text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.pipeline-steps { flex: 1; padding: 8px 0; }
+.step-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 16px; cursor: pointer;
+  transition: background 0.2s;
+  border-left: 2px solid transparent;
+  position: relative;
+}
+.step-item:hover { background: rgba(255,255,255,0.02); }
+.step-item.active {
+  background: var(--step-active);
+  border-left-color: var(--cyan);
+}
+.step-item.done {
+  background: var(--step-done);
+  border-left-color: var(--green);
+}
+.step-item.error {
+  background: rgba(255,77,106,0.06);
+  border-left-color: var(--red);
+}
+.step-num {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--bg-card); border: 1px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+  color: var(--text-muted); flex-shrink: 0; margin-top: 1px;
+  transition: all 0.3s;
+}
+.step-item.active .step-num {
+  background: var(--cyan); border-color: var(--cyan); color: #000; font-weight: 600;
+}
+.step-item.done .step-num {
+  background: var(--green); border-color: var(--green); color: #000;
+}
+.step-item.error .step-num {
+  background: var(--red); border-color: var(--red); color: #fff;
+}
+.step-info { flex: 1; min-width: 0; }
+.step-title { font-size: 12px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.step-item.active .step-title { color: var(--cyan); }
+.step-item.done .step-title { color: var(--green); }
+.step-sub { font-size: 10px; color: var(--text-muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.step-icon { font-size: 14px; flex-shrink: 0; }
 
-/* ── SCANLINE OVERLAY ──────────────────────────── */
-body::before{
-  content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
-  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.08) 2px,rgba(0,0,0,.08) 4px);
+.sidebar-controls { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
+.btn {
+  padding: 8px 14px; border-radius: 6px; font-family: var(--font-main);
+  font-size: 11px; font-weight: 600; cursor: pointer; letter-spacing: 0.06em;
+  border: none; transition: all 0.2s; text-align: center;
 }
+.btn-primary { background: var(--cyan); color: #000; }
+.btn-primary:hover { background: #00e6ff; }
+.btn-primary:disabled { background: var(--text-muted); color: var(--bg-base); cursor: not-allowed; }
+.btn-secondary { background: transparent; color: var(--text-secondary); border: 1px solid var(--border2); }
+.btn-secondary:hover { background: rgba(255,255,255,0.04); }
+.btn-danger { background: transparent; color: var(--red); border: 1px solid rgba(255,77,106,0.3); }
+.btn-danger:hover { background: rgba(255,77,106,0.08); }
 
-/* ── HEADER ────────────────────────────────────── */
-header{
-  background:linear-gradient(90deg,#020c18 0%,#071828 40%,#020c18 100%);
-  border-bottom:1px solid var(--border);
-  padding:0 28px;
-  display:flex;align-items:center;gap:20px;
-  height:62px;position:sticky;top:0;z-index:100;
-}
-.logo-mark{
-  width:38px;height:38px;
-  border:2px solid var(--accent);
-  border-radius:6px;
-  display:flex;align-items:center;justify-content:center;
-  font-family:'Share Tech Mono',monospace;font-size:18px;color:var(--accent);
-  box-shadow:var(--glow);
-  animation:pulse-border 3s ease-in-out infinite;
-}
-@keyframes pulse-border{
-  0%,100%{box-shadow:0 0 8px rgba(0,212,255,0.3);}
-  50%{box-shadow:0 0 22px rgba(0,212,255,0.7);}
-}
-.header-title{flex:1;}
-.header-title h1{font-family:'Exo 2',sans-serif;font-size:18px;font-weight:700;letter-spacing:2px;color:#fff;}
-.header-title p{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
-.status-bar{display:flex;gap:16px;align-items:center;}
-.status-pill{
-  padding:4px 12px;border-radius:3px;font-size:11px;font-family:'Share Tech Mono',monospace;
-  letter-spacing:1px;border:1px solid;
-}
-.pill-ready{border-color:var(--accent3);color:var(--accent3);background:rgba(57,255,106,0.07);}
-.pill-running{border-color:var(--warn);color:var(--warn);background:rgba(255,204,0,0.07);animation:blink 1s step-end infinite;}
-.pill-error{border-color:var(--danger);color:var(--danger);background:rgba(255,45,85,0.07);}
-@keyframes blink{0%,100%{opacity:1;}50%{opacity:.4;}}
+/* === RIGHT CONTENT === */
+.content-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
-.sim-clock{
-  font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--accent);
-  background:rgba(0,212,255,0.07);border:1px solid var(--border);
-  padding:4px 12px;border-radius:3px;
+/* Step header */
+.step-header {
+  padding: 16px 24px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 14px; flex-shrink: 0;
 }
+.step-header-num {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+  color: var(--text-muted); background: var(--bg-card);
+  padding: 4px 8px; border-radius: 4px;
+  border: 1px solid var(--border2);
+}
+.step-header-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+.step-header-sub { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); margin-top: 1px; }
+.step-header-spacer { flex: 1; }
+.step-badge {
+  font-size: 10px; font-weight: 600; padding: 3px 10px;
+  border-radius: 20px; letter-spacing: 0.08em; text-transform: uppercase;
+}
+.badge-running { background: rgba(0,201,228,0.12); color: var(--cyan); border: 1px solid rgba(0,201,228,0.25); }
+.badge-done { background: rgba(0,228,160,0.12); color: var(--green); border: 1px solid rgba(0,228,160,0.25); }
+.badge-pending { background: rgba(255,255,255,0.04); color: var(--text-muted); border: 1px solid var(--border); }
+.badge-error { background: rgba(255,77,106,0.12); color: var(--red); border: 1px solid rgba(255,77,106,0.25); }
 
-/* ── MAIN GRID ─────────────────────────────────── */
-.app-grid{
-  display:grid;
-  grid-template-columns:280px 1fr 320px;
-  grid-template-rows:auto 1fr;
-  height:calc(100vh - 62px);
-  gap:0;
+/* === CONTENT PANELS === */
+.panels { flex: 1; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 0; overflow: hidden; }
+.panel {
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
 }
+.panel:nth-child(2) { border-right: none; }
+.panel:nth-child(4) { border-right: none; border-bottom: none; }
+.panel:nth-child(3) { border-bottom: none; }
+.panel-header {
+  padding: 8px 14px 7px;
+  border-bottom: 1px solid var(--border);
+  font-size: 9px; font-weight: 600; letter-spacing: 0.14em;
+  color: var(--text-muted); text-transform: uppercase;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.panel-body { flex: 1; overflow-y: auto; padding: 12px 14px; }
+.panel-body::-webkit-scrollbar { width: 4px; }
+.panel-body::-webkit-scrollbar-track { background: transparent; }
+.panel-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
-/* ── SIDEBAR LEFT — PIPELINE ───────────────────── */
-.sidebar-left{
-  background:var(--panel);
-  border-right:1px solid var(--border);
-  overflow-y:auto;padding:16px;
-  display:flex;flex-direction:column;gap:10px;
+/* Code block */
+.code-block {
+  font-family: var(--font-mono); font-size: 11px;
+  background: var(--bg-base); border-radius: 6px;
+  border: 1px solid var(--border);
+  padding: 10px 12px; margin-bottom: 8px;
+  line-height: 1.6; color: var(--text-secondary);
+  overflow-x: auto;
 }
-.sidebar-left::-webkit-scrollbar{width:4px;}
-.sidebar-left::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.code-block .kw { color: var(--purple); }
+.code-block .fn { color: var(--cyan); }
+.code-block .str { color: var(--green); }
+.code-block .num { color: var(--amber); }
+.code-block .cm { color: var(--text-muted); }
+.code-block .var { color: var(--blue); }
+.code-block .ok { color: var(--green); }
+.code-block .err { color: var(--red); }
 
-.pipeline-label{
-  font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;
-  padding:4px 0 8px;border-bottom:1px solid var(--border);margin-bottom:4px;
+/* Log entries */
+.log-entry {
+  display: flex; align-items: flex-start; gap: 8px;
+  font-family: var(--font-mono); font-size: 10.5px;
+  padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.03);
+  line-height: 1.5;
 }
+.log-entry:last-child { border-bottom: none; }
+.log-ts { color: var(--text-muted); flex-shrink: 0; min-width: 42px; }
+.log-tag {
+  font-size: 9px; font-weight: 700; padding: 1px 6px;
+  border-radius: 3px; flex-shrink: 0; margin-top: 1px;
+  text-transform: uppercase; letter-spacing: 0.08em;
+}
+.tag-ca { background: rgba(155,124,255,0.15); color: var(--purple); }
+.tag-auth { background: rgba(59,158,255,0.15); color: var(--blue); }
+.tag-chain { background: rgba(244,166,35,0.15); color: var(--amber); }
+.tag-cats { background: rgba(0,228,160,0.15); color: var(--green); }
+.tag-platoon { background: rgba(0,201,228,0.15); color: var(--cyan); }
+.tag-attack { background: rgba(255,77,106,0.15); color: var(--red); }
+.tag-rep { background: rgba(29,219,191,0.15); color: var(--teal); }
+.tag-sec { background: rgba(255,107,172,0.15); color: var(--pink); }
+.log-msg { color: var(--text-secondary); flex: 1; word-break: break-all; }
+.log-msg .hl { color: var(--text-primary); }
+.log-msg .ok { color: var(--green); }
+.log-msg .warn { color: var(--amber); }
+.log-msg .err { color: var(--red); }
 
-.pipe-step{
-  border:1px solid var(--border);border-radius:6px;
-  overflow:hidden;cursor:pointer;transition:all .2s;
-  background:var(--panel2);
+/* KV row */
+.kv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+.kv-item {
+  background: var(--bg-base); border-radius: 5px;
+  border: 1px solid var(--border);
+  padding: 8px 10px;
 }
-.pipe-step:hover{border-color:var(--accent);box-shadow:0 0 12px rgba(0,212,255,0.15);}
-.pipe-step.active{border-color:var(--accent);box-shadow:var(--glow);}
-.pipe-step.done{border-color:var(--accent3);box-shadow:0 0 8px rgba(57,255,106,0.2);}
-.pipe-step.running{border-color:var(--warn);}
-.pipe-step.error{border-color:var(--danger);}
+.kv-label { font-size: 9px; font-weight: 600; letter-spacing: 0.1em; color: var(--text-muted); text-transform: uppercase; margin-bottom: 3px; }
+.kv-val { font-family: var(--font-mono); font-size: 11px; color: var(--text-primary); word-break: break-all; }
+.kv-val.ok { color: var(--green); }
+.kv-val.warn { color: var(--amber); }
+.kv-val.err { color: var(--red); }
+.kv-val.accent { color: var(--cyan); }
 
-.step-head{
-  display:flex;align-items:center;gap:10px;
-  padding:10px 12px;
+/* Result row (for vehicles) */
+.vehicle-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px; border-radius: 5px;
+  background: var(--bg-base); margin-bottom: 5px;
+  border: 1px solid var(--border);
+  font-size: 11px;
 }
-.step-num{
-  width:24px;height:24px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  font-family:'Share Tech Mono',monospace;font-size:11px;font-weight:bold;
-  background:var(--border);color:var(--muted);flex-shrink:0;
-  transition:all .3s;
+.vr-id { font-family: var(--font-mono); font-weight: 600; color: var(--cyan); min-width: 72px; }
+.vr-bar-wrap { flex: 1; height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; }
+.vr-bar { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
+.vr-score { font-family: var(--font-mono); font-size: 10px; color: var(--text-secondary); min-width: 36px; text-align: right; }
+.vr-state {
+  font-size: 9px; font-weight: 700; padding: 1px 7px;
+  border-radius: 10px; text-transform: uppercase; letter-spacing: 0.07em; min-width: 62px; text-align: center;
 }
-.pipe-step.done .step-num{background:var(--accent3);color:#000;}
-.pipe-step.running .step-num{background:var(--warn);color:#000;animation:blink .8s step-end infinite;}
-.pipe-step.error .step-num{background:var(--danger);color:#fff;}
-.pipe-step.active .step-num{background:var(--accent);color:#000;}
+.st-trusted { background: rgba(0,228,160,0.12); color: var(--green); }
+.st-untrusted { background: rgba(244,166,35,0.12); color: var(--amber); }
+.st-banned { background: rgba(255,77,106,0.12); color: var(--red); }
 
-.step-info{flex:1;min-width:0;}
-.step-info .step-name{font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.step-info .step-sub{font-size:10px;color:var(--muted);}
-.step-icon{font-size:16px;flex-shrink:0;}
+/* Progress indicator */
+.progress-wrap { height: 2px; background: var(--border); flex-shrink: 0; }
+.progress-bar { height: 100%; background: linear-gradient(90deg, var(--cyan), var(--teal)); transition: width 0.4s ease; width: 0%; }
 
-.step-connector{
-  display:flex;justify-content:center;
-  height:12px;position:relative;
-}
-.step-connector::before{
-  content:'';width:1px;height:100%;
-  background:linear-gradient(to bottom,var(--border),transparent);
-}
+/* Chart container */
+.chart-wrap { position: relative; width: 100%; height: 100%; min-height: 120px; }
 
-/* ── MAIN PANEL ────────────────────────────────── */
-.main-panel{
-  display:flex;flex-direction:column;overflow:hidden;
-  background:var(--bg);
+/* Summary grid */
+.summary-panels { flex: 1; display: grid; grid-template-columns: repeat(4,1fr); grid-template-rows: auto 1fr; gap: 0; overflow: hidden; }
+.summary-stat {
+  padding: 14px 18px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 4px;
 }
+.ss-label { font-size: 9px; font-weight: 600; letter-spacing: 0.12em; color: var(--text-muted); text-transform: uppercase; }
+.ss-val { font-family: var(--font-mono); font-size: 22px; font-weight: 600; }
+.ss-sub { font-size: 10px; color: var(--text-muted); }
+.summary-chart-area { grid-column: 1/-1; padding: 12px; display: flex; gap: 12px; overflow: hidden; }
+.summary-chart-box { flex: 1; background: var(--bg-base); border-radius: 6px; border: 1px solid var(--border); padding: 8px; display: flex; flex-direction: column; }
+.scb-title { font-size: 9px; font-weight: 600; letter-spacing: 0.1em; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; }
+.scb-body { flex: 1; position: relative; min-height: 80px; }
 
-/* INPUT SECTION */
-.input-section{
-  background:var(--panel);border-bottom:1px solid var(--border);
-  padding:14px 20px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;
-}
-.input-group{display:flex;flex-direction:column;gap:4px;min-width:120px;}
-.input-group label{font-size:10px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;}
-.inp{
-  background:var(--bg);border:1px solid var(--border);border-radius:4px;
-  color:var(--text);font-family:'Share Tech Mono',monospace;font-size:12px;
-  padding:6px 10px;outline:none;transition:border-color .2s;
-  width:100%;
-}
-.inp:focus{border-color:var(--accent);box-shadow:0 0 8px rgba(0,212,255,0.2);}
-select.inp{cursor:pointer;}
+/* Spinning loader */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--cyan); border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.pulse { animation: pulse 1.2s ease infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.blink { animation: blink 1s step-end infinite; }
 
-.btn{
-  padding:8px 18px;border-radius:4px;border:none;cursor:pointer;
-  font-family:'Exo 2',sans-serif;font-size:13px;font-weight:700;
-  letter-spacing:1px;text-transform:uppercase;transition:all .2s;
-  display:flex;align-items:center;gap:6px;white-space:nowrap;
-}
-.btn-primary{
-  background:var(--accent);color:#000;
-  box-shadow:0 0 12px rgba(0,212,255,0.3);
-}
-.btn-primary:hover{background:#00eeff;box-shadow:0 0 20px rgba(0,212,255,0.6);}
-.btn-primary:disabled{opacity:.4;cursor:not-allowed;}
-.btn-secondary{
-  background:transparent;color:var(--accent);border:1px solid var(--accent);
-}
-.btn-secondary:hover{background:rgba(0,212,255,0.1);}
-.btn-danger{
-  background:var(--danger);color:#fff;
-  box-shadow:0 0 12px rgba(255,45,85,0.3);
-}
-.btn-danger:hover{background:#ff4466;}
+/* Cursor */
+.cursor::after { content:'_'; animation: blink 1s step-end infinite; color: var(--cyan); }
 
-/* STEP RUN CONTROLS */
-.step-controls{
-  display:flex;gap:8px;align-items:center;
-  padding:10px 20px;border-bottom:1px solid var(--border);
-  background:var(--panel2);flex-wrap:wrap;
+/* Welcome screen */
+#welcome {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 8px; padding: 40px;
 }
-.step-badge{
-  font-size:11px;font-family:'Share Tech Mono',monospace;
-  background:rgba(0,212,255,0.08);border:1px solid var(--border);
-  padding:4px 10px;border-radius:3px;color:var(--accent);
-}
-.spacer{flex:1;}
-
-/* RESULTS AREA */
-.results-area{
-  flex:1;overflow-y:auto;padding:16px 20px;
-  display:flex;flex-direction:column;gap:14px;
-}
-.results-area::-webkit-scrollbar{width:5px;}
-.results-area::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
-
-/* Result blocks */
-.result-block{
-  background:var(--panel);border:1px solid var(--border);border-radius:6px;
-  overflow:hidden;animation:slideIn .3s ease-out;
-}
-@keyframes slideIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
-
-.result-header{
-  display:flex;align-items:center;gap:10px;
-  padding:10px 14px;border-bottom:1px solid var(--border);
-  background:var(--panel2);cursor:pointer;user-select:none;
-}
-.result-header .rh-tag{
-  font-family:'Share Tech Mono',monospace;font-size:10px;
-  padding:2px 8px;border-radius:2px;
-}
-.tag-auth{background:rgba(0,212,255,0.15);color:var(--accent);}
-.tag-cats{background:rgba(57,255,106,0.15);color:var(--accent3);}
-.tag-bc{background:rgba(255,107,53,0.15);color:var(--accent2);}
-.tag-attack{background:rgba(255,45,85,0.15);color:var(--danger);}
-.tag-platoon{background:rgba(255,204,0,0.15);color:var(--warn);}
-.tag-db{background:rgba(150,100,255,0.15);color:#b57bff;}
-.tag-info{background:rgba(100,150,200,0.15);color:#7aafd4;}
-
-.result-header .rh-title{font-size:13px;font-weight:600;flex:1;}
-.result-header .rh-time{font-size:11px;color:var(--muted);font-family:'Share Tech Mono',monospace;}
-.result-header .rh-toggle{color:var(--muted);font-size:12px;transition:transform .2s;}
-.result-header.collapsed .rh-toggle{transform:rotate(-90deg);}
-
-.result-body{padding:14px;display:flex;flex-direction:column;gap:12px;}
-.result-body.hidden{display:none;}
-
-.data-grid{
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;
-}
-.kv{
-  background:var(--bg);border:1px solid var(--border);border-radius:4px;
-  padding:8px 12px;
-}
-.kv .k{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
-.kv .v{font-size:15px;font-weight:700;font-family:'Share Tech Mono',monospace;margin-top:2px;}
-.v-accent{color:var(--accent);}
-.v-green{color:var(--accent3);}
-.v-orange{color:var(--accent2);}
-.v-warn{color:var(--warn);}
-.v-danger{color:var(--danger);}
-.v-purple{color:#b57bff;}
-
-.mono-block{
-  background:var(--bg);border:1px solid var(--border);border-radius:4px;
-  padding:12px;font-family:'Share Tech Mono',monospace;font-size:11px;
-  color:#7ad4f0;line-height:1.7;white-space:pre-wrap;word-break:break-all;
-  max-height:180px;overflow-y:auto;
-}
-.mono-block::-webkit-scrollbar{width:3px;}
-.mono-block::-webkit-scrollbar-thumb{background:var(--border);}
-
-.progress-track{
-  height:4px;background:var(--border);border-radius:2px;overflow:hidden;
-}
-.progress-fill{
-  height:100%;border-radius:2px;transition:width 0.5s ease;
-}
-.pf-accent{background:linear-gradient(90deg,var(--accent),#0099cc);}
-.pf-green{background:linear-gradient(90deg,var(--accent3),#00aa44);}
-.pf-warn{background:linear-gradient(90deg,var(--warn),#cc8800);}
-.pf-danger{background:linear-gradient(90deg,var(--danger),#cc1133);}
-
-.rep-row{
-  display:flex;align-items:center;gap:10px;padding:6px 0;
-  border-bottom:1px solid rgba(26,58,85,0.5);
-}
-.rep-row:last-child{border-bottom:none;}
-.rep-vid{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--accent);width:80px;flex-shrink:0;}
-.rep-bar-wrap{flex:1;display:flex;align-items:center;gap:8px;}
-.rep-bar{height:6px;border-radius:3px;transition:width .6s ease;}
-.rep-val{font-family:'Share Tech Mono',monospace;font-size:11px;width:40px;text-align:right;}
-.rep-state{font-size:10px;padding:2px 7px;border-radius:2px;font-weight:600;flex-shrink:0;}
-.state-trusted{background:rgba(57,255,106,.15);color:var(--accent3);}
-.state-untrusted{background:rgba(255,204,0,.15);color:var(--warn);}
-.state-banned{background:rgba(255,45,85,.15);color:var(--danger);}
-
-/* attack timeline */
-.attack-timeline{display:flex;flex-direction:column;gap:6px;}
-.atk-event{
-  display:flex;align-items:flex-start;gap:10px;
-  padding:8px 10px;border-radius:4px;border-left:3px solid;
-  background:rgba(0,0,0,0.3);
-}
-.atk-sybil{border-color:#ff6b35;}
-.atk-spoof{border-color:#ff2d55;}
-.atk-false{border-color:#ffcc00;}
-.atk-beacon{border-color:#b57bff;}
-.atk-time{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);white-space:nowrap;margin-top:1px;}
-.atk-detail{font-size:12px;line-height:1.5;}
-.atk-detail strong{color:#fff;}
-
-/* platoon visual */
-.platoon-visual{display:flex;flex-direction:column;gap:8px;}
-.platoon-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-.platoon-label{font-size:11px;color:var(--muted);width:70px;flex-shrink:0;font-family:'Share Tech Mono',monospace;}
-.vehicle-chip{
-  padding:4px 10px;border-radius:3px;font-size:11px;
-  font-family:'Share Tech Mono',monospace;border:1px solid;
-  transition:all .3s;position:relative;
-}
-.vc-p1{background:rgba(220,20,20,0.12);border-color:#dc1414;color:#ff6666;}
-.vc-p2{background:rgba(20,140,240,0.12);border-color:#148cf0;color:#66bbff;}
-.vc-merged{background:rgba(57,255,106,0.12);border-color:var(--accent3);color:var(--accent3);}
-.vc-malicious{background:rgba(255,204,0,0.12);border-color:var(--warn);color:var(--warn);}
-.vc-banned{background:rgba(255,45,85,0.12);border-color:var(--danger);color:var(--danger);}
-.merge-arrow{color:var(--accent3);font-size:18px;font-weight:bold;}
-
-/* blockchain */
-.chain-block{
-  display:flex;align-items:center;gap:0;overflow-x:auto;padding:4px 0;
-}
-.chain-cell{
-  background:var(--panel2);border:1px solid var(--border);border-radius:4px;
-  padding:8px 12px;min-width:130px;flex-shrink:0;
-}
-.chain-arrow{color:var(--border);font-size:18px;padding:0 6px;flex-shrink:0;}
-.chain-cell .c-hash{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:4px;}
-.chain-cell .c-vid{font-size:11px;color:var(--accent);font-weight:600;}
-.chain-cell .c-score{font-size:18px;font-weight:700;color:var(--accent3);font-family:'Share Tech Mono',monospace;}
-
-/* zkp proof */
-.proof-viz{
-  display:grid;grid-template-columns:1fr auto 1fr;
-  gap:10px;align-items:center;
-}
-.proof-box{
-  background:var(--bg);border:1px solid var(--border);border-radius:4px;
-  padding:10px 12px;
-}
-.proof-box .pb-label{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}
-.proof-box .pb-val{font-family:'Share Tech Mono',monospace;font-size:10px;color:#7ad4f0;word-break:break-all;line-height:1.5;}
-.proof-arrow{
-  display:flex;flex-direction:column;align-items:center;gap:4px;
-  color:var(--accent);
-}
-.proof-arrow span{font-size:22px;}
-.proof-arrow .pa-label{font-size:9px;color:var(--muted);letter-spacing:1px;}
-
-/* ── RIGHT SIDEBAR — LOG ───────────────────────── */
-.sidebar-right{
-  background:var(--panel);border-left:1px solid var(--border);
-  display:flex;flex-direction:column;overflow:hidden;
-}
-.sr-header{
-  padding:10px 14px;border-bottom:1px solid var(--border);
-  background:var(--panel2);
-  display:flex;align-items:center;justify-content:space-between;
-}
-.sr-header span{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);}
-.sr-filter{display:flex;gap:6px;padding:8px 10px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
-.filter-btn{
-  padding:2px 8px;border-radius:2px;font-size:10px;cursor:pointer;
-  border:1px solid var(--border);background:transparent;color:var(--muted);
-  font-family:'Rajdhani',sans-serif;transition:all .2s;
-}
-.filter-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,0.07);}
-
-.log-stream{
-  flex:1;overflow-y:auto;padding:8px 10px;
-  display:flex;flex-direction:column;gap:2px;
-}
-.log-stream::-webkit-scrollbar{width:3px;}
-.log-stream::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
-
-.log-entry{
-  display:flex;gap:8px;padding:3px 6px;border-radius:2px;
-  font-family:'Share Tech Mono',monospace;font-size:10px;line-height:1.5;
-  animation:logIn .2s ease-out;
-}
-@keyframes logIn{from{opacity:0;transform:translateX(-6px);}to{opacity:1;transform:translateX(0);}}
-.log-ts{color:var(--muted);white-space:nowrap;flex-shrink:0;}
-.log-tag{flex-shrink:0;width:60px;text-align:center;border-radius:2px;padding:0 3px;}
-.log-msg{flex:1;word-break:break-word;}
-
-.log-INFO .log-tag{background:rgba(100,150,200,0.15);color:#7aafd4;}
-.log-AUTH .log-tag{background:rgba(0,212,255,0.15);color:var(--accent);}
-.log-CATS .log-tag{background:rgba(57,255,106,0.15);color:var(--accent3);}
-.log-BLOCK .log-tag{background:rgba(255,107,53,0.15);color:var(--accent2);}
-.log-ATTACK .log-tag{background:rgba(255,45,85,0.15);color:var(--danger);}
-.log-PLATOON .log-tag{background:rgba(255,204,0,0.15);color:var(--warn);}
-.log-DB .log-tag{background:rgba(150,100,255,0.15);color:#b57bff;}
-.log-ERROR .log-tag{background:rgba(255,45,85,0.2);color:var(--danger);}
-
-.log-ATTACK{background:rgba(255,45,85,0.04);}
-.log-ERROR{background:rgba(255,45,85,0.06);}
-
-/* ── LOADING SPINNER ───────────────────────────── */
-.spinner{
-  width:16px;height:16px;border-radius:50%;
-  border:2px solid transparent;
-  border-top-color:currentColor;
-  animation:spin .6s linear infinite;display:inline-block;
-}
-@keyframes spin{to{transform:rotate(360deg);}}
-
-/* ── EMPTY STATE ───────────────────────────────── */
-.empty-state{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  flex:1;gap:12px;color:var(--muted);
-  padding:40px;text-align:center;
-}
-.empty-state .es-icon{font-size:40px;opacity:.4;}
-.empty-state p{font-size:13px;max-width:260px;line-height:1.6;}
-
-/* ── PROGRESS BAR TOP ──────────────────────────── */
-.sim-progress{
-  height:2px;background:var(--border);position:relative;
-}
-.sim-progress-fill{
-  height:100%;background:linear-gradient(90deg,var(--accent),var(--accent3));
-  transition:width .4s ease;position:relative;
-  box-shadow:0 0 8px rgba(0,212,255,0.6);
-}
-
-/* ── METRIC STRIP ──────────────────────────────── */
-.metric-strip{
-  display:flex;gap:0;border-bottom:1px solid var(--border);
-  overflow-x:auto;background:var(--panel2);
-}
-.metric-strip::-webkit-scrollbar{height:3px;}
-.ms-item{
-  padding:10px 18px;border-right:1px solid var(--border);
-  flex-shrink:0;text-align:center;min-width:110px;
-}
-.ms-item .ms-val{
-  font-family:'Share Tech Mono',monospace;font-size:20px;font-weight:700;
-  line-height:1;
-}
-.ms-item .ms-lbl{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:3px;}
-
-/* ── STEP DETAIL (expanded content) ───────────── */
-.step-detail{
-  padding:8px 12px 10px;
-  font-size:11px;color:var(--muted);border-top:1px solid var(--border);
-  display:none;
-}
-.pipe-step.active .step-detail{display:block;}
-
-/* ── HIGHLIGHT HOVER ───────────────────────────── */
-.result-header:hover .rh-title{color:var(--accent);}
-
-/* responsive tweak */
-@media(max-width:1100px){
-  .app-grid{grid-template-columns:220px 1fr 260px;}
-}
+.welcome-icon { font-size: 32px; margin-bottom: 8px; }
+.welcome-title { font-size: 18px; font-weight: 600; color: var(--text-primary); }
+.welcome-sub { font-size: 13px; color: var(--text-secondary); text-align: center; max-width: 360px; line-height: 1.6; }
+.welcome-hint { font-size: 11px; color: var(--text-muted); margin-top: 4px; font-family: var(--font-mono); }
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
-<header>
-  <div class="logo-mark">▲</div>
-  <div class="header-title">
-    <h1>SECURE PLATOON SIMULATION FRAMEWORK</h1>
-    <p>Khan et al. IEEE TITS 2025 · ZKP + CATS + Blockchain + SUMO</p>
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="logo-dot"></div>
+  <span class="logo-text">ZKP-PLATOON</span>
+  <span class="logo-sub">· Security Simulation v2.1</span>
+  <div class="topbar-spacer"></div>
+  <span class="sim-time">SIM TIME: <span id="sim-clock">0.0s</span></span>
+</div>
+
+<!-- STATS BAR -->
+<div class="statsbar">
+  <div class="stat-item">
+    <div class="stat-val sv-cyan" id="s-vehicles">0</div>
+    <div class="stat-label">Vehicles</div>
   </div>
-  <div class="status-bar">
-    <div class="sim-clock" id="simClock">T = 0.0s</div>
-    <div class="status-pill pill-ready" id="statusPill">READY</div>
+  <div class="stat-item">
+    <div class="stat-val sv-green" id="s-authed">0</div>
+    <div class="stat-label">Auth'd</div>
   </div>
-</header>
+  <div class="stat-item">
+    <div class="stat-val sv-amber" id="s-platoons">0</div>
+    <div class="stat-label">Platoons</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-val sv-red" id="s-attacks">0</div>
+    <div class="stat-label">Attacks</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-val sv-purple" id="s-txs">0</div>
+    <div class="stat-label">Chain TXs</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-val sv-pink" id="s-banned">0</div>
+    <div class="stat-label">Banned</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-val sv-teal" id="s-proof">—</div>
+    <div class="stat-label">Proof ms</div>
+  </div>
+</div>
 
-<div class="app-grid">
+<!-- PROGRESS BAR -->
+<div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
 
-  <!-- ══ LEFT: PIPELINE STEPS ══════════════════════ -->
-  <div class="sidebar-left">
-    <div class="pipeline-label">▸ SIMULATION PIPELINE</div>
+<!-- MAIN LAYOUT -->
+<div class="main-layout">
 
-    <div class="pipe-step" id="step1" onclick="activateStep(1)">
-      <div class="step-head">
-        <div class="step-num">1</div>
-        <div class="step-info">
-          <div class="step-name">SUMO Init</div>
-          <div class="step-sub">Network &amp; Route Setup</div>
-        </div>
-        <div class="step-icon">🛣️</div>
-      </div>
-      <div class="step-detail">Load guindy.net.xml, parse edges &amp; routes, start TraCI connection.</div>
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <span>Pipeline Steps</span>
+      <span id="step-counter" style="color:var(--text-secondary);font-size:10px;">0/8</span>
     </div>
-    <div class="step-connector"></div>
-
-    <div class="pipe-step" id="step2" onclick="activateStep(2)">
-      <div class="step-head">
-        <div class="step-num">2</div>
-        <div class="step-info">
-          <div class="step-name">CA Setup</div>
-          <div class="step-sub">ZKP Key Generation</div>
-        </div>
-        <div class="step-icon">🔑</div>
-      </div>
-      <div class="step-detail">CertificationAuthority generates Pk/Vk, CA key pair with timestamp.</div>
+    <div class="pipeline-steps" id="pipeline-steps">
+      <!-- Steps injected by JS -->
     </div>
-    <div class="step-connector"></div>
-
-    <div class="pipe-step" id="step3" onclick="activateStep(3)">
-      <div class="step-head">
-        <div class="step-num">3</div>
-        <div class="step-info">
-          <div class="step-name">Vehicle Auth</div>
-          <div class="step-sub">Alg 2 + 3 + 4</div>
-        </div>
-        <div class="step-icon">🪪</div>
-      </div>
-      <div class="step-detail">Register vehicles, generate ZK proofs, CA verifies — soundness / completeness / ZK checks.</div>
-    </div>
-    <div class="step-connector"></div>
-
-    <div class="pipe-step" id="step4" onclick="activateStep(4)">
-      <div class="step-head">
-        <div class="step-num">4</div>
-        <div class="step-info">
-          <div class="step-name">Blockchain Init</div>
-          <div class="step-sub">VehicleTrust.sol</div>
-        </div>
-        <div class="step-icon">⛓️</div>
-      </div>
-      <div class="step-detail">Set initial trust score = 80 per vehicle in VehicleTrust.sol; register commitment in CATS.sol.</div>
-    </div>
-    <div class="step-connector"></div>
-
-    <div class="pipe-step" id="step5" onclick="activateStep(5)">
-      <div class="step-head">
-        <div class="step-num">5</div>
-        <div class="step-info">
-          <div class="step-name">Platoon Form</div>
-          <div class="step-sub">Join / Merge / Split</div>
-        </div>
-        <div class="step-icon">🚗</div>
-      </div>
-      <div class="step-detail">Vehicles join via RSU auth, Platoon-2 spawns and merges, bully leader election, mid-vehicle split.</div>
-    </div>
-    <div class="step-connector"></div>
-
-    <div class="pipe-step" id="step6" onclick="activateStep(6)">
-      <div class="step-head">
-        <div class="step-num">6</div>
-        <div class="step-info">
-          <div class="step-name">CATS Beacons</div>
-          <div class="step-sub">V2V Messaging 50 Hz</div>
-        </div>
-        <div class="step-icon">📡</div>
-      </div>
-      <div class="step-detail">Beacon + obstacle messages broadcast within 300m comm range; kinematic verification per receiver.</div>
-    </div>
-    <div class="step-connector"></div>
-
-    <div class="pipe-step" id="step7" onclick="activateStep(7)">
-      <div class="step-head">
-        <div class="step-num">7</div>
-        <div class="step-info">
-          <div class="step-name">Attack Inject</div>
-          <div class="step-sub">Sybil · Spoof · False</div>
-        </div>
-        <div class="step-icon">⚠️</div>
-      </div>
-      <div class="step-detail">False obstacle (30–60s), incorrect beacon (80–110s), Sybil attack (120–180s), GPS spoofing (160–210s).</div>
-    </div>
-    <div class="step-connector"></div>
-
-    <div class="pipe-step" id="step8" onclick="activateStep(8)">
-      <div class="step-head">
-        <div class="step-num">8</div>
-        <div class="step-info">
-          <div class="step-name">Reputation Update</div>
-          <div class="step-sub">1s Window + Votes</div>
-        </div>
-        <div class="step-icon">📊</div>
-      </div>
-      <div class="step-detail">Per-vehicle votes tallied, reputation updated, trust state enforced via SUMO speed/tau actions.</div>
-    </div>
-    <div class="step-connector"></div>
-
-    <div class="pipe-step" id="step9" onclick="activateStep(9)">
-      <div class="step-head">
-        <div class="step-num">9</div>
-        <div class="step-info">
-          <div class="step-name">Chain + DB Log</div>
-          <div class="step-sub">On-chain + PostgreSQL</div>
-        </div>
-        <div class="step-icon">🗄️</div>
-      </div>
-      <div class="step-detail">Write updated reputation to CATS.sol; batch-insert votes &amp; rep history to PostgreSQL; flush CSV &amp; security log.</div>
+    <div class="sidebar-controls">
+      <button class="btn btn-primary" id="btn-run-all" onclick="runAll()">▶ Run Simulation</button>
+      <button class="btn btn-secondary" id="btn-step" onclick="runStep()">Step →</button>
+      <button class="btn btn-danger" onclick="resetSim()">↺ Reset</button>
     </div>
   </div>
 
-  <!-- ══ MAIN PANEL ════════════════════════════════ -->
-  <div class="main-panel">
-
-    <!-- PROGRESS TOP -->
-    <div class="sim-progress">
-      <div class="sim-progress-fill" id="simProgressFill" style="width:0%"></div>
+  <!-- CONTENT -->
+  <div class="content-area" id="content-area">
+    <div id="welcome">
+      <div class="welcome-icon">🛡</div>
+      <div class="welcome-title">ZKP Platoon Security Simulator</div>
+      <div class="welcome-sub">Simulates the full 8-step pipeline: CA key generation, ZKP vehicle authentication, blockchain trust initialisation, CATS reputation management, platoon operations, attack injection, reputation update, and security summary.</div>
+      <div class="welcome-hint">Press ▶ Run Simulation or Step → to begin</div>
     </div>
-
-    <!-- METRIC STRIP -->
-    <div class="metric-strip">
-      <div class="ms-item">
-        <div class="ms-val v-accent" id="mVehicles">0</div>
-        <div class="ms-lbl">Vehicles</div>
-      </div>
-      <div class="ms-item">
-        <div class="ms-val v-green" id="mAuthenticated">0</div>
-        <div class="ms-lbl">Auth'd</div>
-      </div>
-      <div class="ms-item">
-        <div class="ms-val v-orange" id="mPlatoons">0</div>
-        <div class="ms-lbl">Platoons</div>
-      </div>
-      <div class="ms-item">
-        <div class="ms-val v-warn" id="mAttacks">0</div>
-        <div class="ms-lbl">Attacks</div>
-      </div>
-      <div class="ms-item">
-        <div class="ms-val v-purple" id="mChainTx">0</div>
-        <div class="ms-lbl">Chain Txs</div>
-      </div>
-      <div class="ms-item">
-        <div class="ms-val v-accent" id="mVotes">0</div>
-        <div class="ms-lbl">Votes Cast</div>
-      </div>
-      <div class="ms-item">
-        <div class="ms-val v-danger" id="mBanned">0</div>
-        <div class="ms-lbl">Banned</div>
-      </div>
-      <div class="ms-item">
-        <div class="ms-val v-green" id="mProofMs">0.00</div>
-        <div class="ms-lbl">Avg Proof ms</div>
-      </div>
-    </div>
-
-    <!-- INPUT SECTION -->
-    <div class="input-section">
-      <div class="input-group">
-        <label>Platoon 1 Size</label>
-        <input class="inp" type="number" id="p1Size" value="6" min="2" max="10" style="width:90px"/>
-      </div>
-      <div class="input-group">
-        <label>Platoon 2 Size</label>
-        <input class="inp" type="number" id="p2Size" value="3" min="2" max="8" style="width:90px"/>
-      </div>
-      <div class="input-group">
-        <label>Sim Duration (s)</label>
-        <input class="inp" type="number" id="simDur" value="270" min="30" max="600" style="width:100px"/>
-      </div>
-      <div class="input-group">
-        <label>Leader Speed m/s</label>
-        <input class="inp" type="number" id="leaderSpd" value="12" min="5" max="30" style="width:90px"/>
-      </div>
-      <div class="input-group">
-        <label>Malicious Vehicle</label>
-        <select class="inp" id="malVehicle" style="width:110px">
-          <option value="v_p1_6">v_p1_6</option>
-          <option value="v_p1_5">v_p1_5</option>
-          <option value="v_p2_2">v_p2_2</option>
-          <option value="v_p1_4">v_p1_4</option>
-          <option value="none">none</option>
-        </select>
-      </div>
-      <div class="input-group">
-        <label>Blockchain</label>
-        <select class="inp" id="blockchainMode" style="width:120px">
-          <option value="ganache">Ganache (local)</option>
-          <option value="disabled">Disabled</option>
-          <option value="mock">Mock Mode</option>
-        </select>
-      </div>
-      <div style="display:flex;gap:8px;align-items:flex-end;margin-left:auto;">
-        <button class="btn btn-secondary" onclick="resetSim()">↺ Reset</button>
-        <button class="btn btn-primary" id="runAllBtn" onclick="runAllSteps()">
-          ▶ Run Full Simulation
-        </button>
-      </div>
-    </div>
-
-    <!-- STEP CONTROLS -->
-    <div class="step-controls">
-      <span class="step-badge" id="activeStepBadge">Step — / 9</span>
-      <span id="activeStepName" style="font-size:13px;color:var(--muted)">Select a pipeline step or run all</span>
-      <div class="spacer"></div>
-      <button class="btn btn-secondary" id="runStepBtn" onclick="runCurrentStep()" style="font-size:12px;padding:6px 14px;">
-        ▶ Execute Step
-      </button>
-    </div>
-
-    <!-- RESULTS -->
-    <div class="results-area" id="resultsArea">
-      <div class="empty-state" id="emptyState">
-        <div class="es-icon">⬡</div>
-        <p>Configure inputs above, select a pipeline step from the left panel, then click <strong>Execute Step</strong> — or click <strong>Run Full Simulation</strong> to execute the entire pipeline.</p>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- ══ RIGHT SIDEBAR — LOG ══════════════════════ -->
-  <div class="sidebar-right">
-    <div class="sr-header">
-      <span>▸ EVENT LOG</span>
-      <button class="btn btn-secondary" onclick="clearLog()" style="font-size:10px;padding:2px 8px;">CLR</button>
-    </div>
-    <div class="sr-filter">
-      <button class="filter-btn active" onclick="toggleFilter(this,'ALL')">ALL</button>
-      <button class="filter-btn" onclick="toggleFilter(this,'AUTH')">AUTH</button>
-      <button class="filter-btn" onclick="toggleFilter(this,'CATS')">CATS</button>
-      <button class="filter-btn" onclick="toggleFilter(this,'BLOCK')">CHAIN</button>
-      <button class="filter-btn" onclick="toggleFilter(this,'ATTACK')">ATK</button>
-      <button class="filter-btn" onclick="toggleFilter(this,'PLATOON')">PLT</button>
-    </div>
-    <div class="log-stream" id="logStream"></div>
   </div>
 
 </div>
 
 <script>
-// ============================================================
-// SIMULATION STATE
-// ============================================================
-const state = {
-  currentStep: null,
-  completedSteps: new Set(),
+// ================================================================
+// SIMULATION DATA MODEL
+// ================================================================
+
+const VEHICLES = [
+  {id:'v_p1_1',platoon:1,real:'VEH_P1_01',role:'Leader'},
+  {id:'v_p1_2',platoon:1,real:'VEH_P1_02',role:'Member'},
+  {id:'v_p1_3',platoon:1,real:'VEH_P1_03',role:'Member'},
+  {id:'v_p1_4',platoon:1,real:'VEH_P1_04',role:'Member'},
+  {id:'v_p1_5',platoon:1,real:'VEH_P1_05',role:'Member',attacker:'sybil'},
+  {id:'v_p1_6',platoon:1,real:'VEH_P1_06',role:'Member',attacker:'falseobs'},
+  {id:'v_p2_1',platoon:2,real:'VEH_P2_01',role:'Leader'},
+  {id:'v_p2_2',platoon:2,real:'VEH_P2_02',role:'Member',attacker:'spoof'},
+  {id:'v_p2_3',platoon:2,real:'VEH_P2_03',role:'Member'},
+  {id:'v_p2_4',platoon:2,real:'VEH_P2_04',role:'Member'},
+];
+
+const STEPS = [
+  {id:1, title:'CA Setup',     sub:'Alg 1 — KeyGen(IdCA,TS)',       icon:'🔑', tag:'CA',     color:'var(--purple)'},
+  {id:2, title:'Vehicle Auth', sub:'Alg 2+3+4 — ZKP Reg + Prove',   icon:'🪪', tag:'AUTH',   color:'var(--blue)'},
+  {id:3, title:'Blockchain Init',sub:'VehicleTrust.sol — score=80',  icon:'⛓', tag:'CHAIN',  color:'var(--amber)'},
+  {id:4, title:'CATS Init + Beacons',sub:'ReputationMgr + 50Hz V2V',icon:'📡', tag:'CATS',   color:'var(--green)'},
+  {id:5, title:'Platoon Ops',  sub:'Join / Merge / Leave via RSU',   icon:'🚗', tag:'PLATOON',color:'var(--cyan)'},
+  {id:6, title:'Inject Attack',sub:'Sybil · Spoof · FalseObs · Beacon',icon:'⚠️', tag:'ATTACK',color:'var(--red)'},
+  {id:7, title:'Reputation Update',sub:'1s Window — Vote Aggregation',icon:'📊', tag:'REP',   color:'var(--teal)'},
+  {id:8, title:'Security Summary',sub:'Soundness · ZK · Timing · Logs',icon:'🛡', tag:'SEC',  color:'var(--pink)'},
+];
+
+// Runtime state
+let state = {
+  currentStep: 0, // 0 = none started
+  doneSteps: new Set(),
   running: false,
+  stats: { vehicles:0, authed:0, platoons:0, attacks:0, txs:0, banned:0, proof:'—' },
+  vehicles: VEHICLES.map(v=>({...v, rep:70, state:'Trusted', fakeId:'', proof:'', authed:false, trust:0})),
+  ca: { pk:'', sk:'', vk:'', rotations:0 },
+  chainTxs: [],
+  repHistory: [],
   simTime: 0,
-  simTimer: null,
-  vehicles: [],
-  platoons: [],
-  reputations: {},
-  metrics: {vehicles:0,authenticated:0,platoons:0,attacks:0,chainTx:0,votes:0,banned:0,proofMs:0},
-  logFilter: 'ALL',
-  logEntries: []
+  logs: [],
 };
 
-// ============================================================
-// SYNTHETIC DATA GENERATORS (mimic actual script outputs)
-// ============================================================
+// ================================================================
+// STEP DEFINITIONS — each returns HTML for its panels
+// ================================================================
 
-function genHash(prefix='') {
-  const h = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
-  return prefix + h.slice(0,32);
-}
-function genHex(len=16){
-  return [...Array(len)].map(()=>Math.floor(Math.random()*16).toString(16)).join('');
-}
-function ts(){ return state.simTime.toFixed(1); }
-function rnd(a,b){ return +(a+(b-a)*Math.random()).toFixed(3); }
+function hexrand(n){ let s='';for(let i=0;i<n;i++)s+='0123456789abcdef'[Math.floor(Math.random()*16)];return s; }
+function randFloat(a,b){return (Math.random()*(b-a)+a);}
+function fakeCommitment(id){ return '0x'+hexrand(40); }
 
-function getInputs(){
-  return {
-    p1Size:    +document.getElementById('p1Size').value,
-    p2Size:    +document.getElementById('p2Size').value,
-    simDur:    +document.getElementById('simDur').value,
-    leaderSpd: +document.getElementById('leaderSpd').value,
-    malVehicle: document.getElementById('malVehicle').value,
-    blockchain: document.getElementById('blockchainMode').value,
-  };
-}
+const STEP_EXECUTORS = {
 
-function buildVehicles(cfg){
-  const v = [];
-  for(let i=0;i<cfg.p1Size;i++) v.push({id:`v_p1_${i+1}`,pidx:0,plate:`P1-${String(i+1).padStart(2,'0')}`,speed:cfg.leaderSpd,pos:rnd(10,50)*i+10,reputation:80,trustState:'Trusted',authenticated:false,commitment:genHash('c'),fakeId:genHash('f')});
-  for(let i=0;i<cfg.p2Size;i++) v.push({id:`v_p2_${i+1}`,pidx:1,plate:`P2-${String(i+1).padStart(2,'0')}`,speed:cfg.leaderSpd*1.35,pos:rnd(200,260)+i*20,reputation:80,trustState:'Trusted',authenticated:false,commitment:genHash('c'),fakeId:genHash('f')});
-  return v;
-}
+// ─── STEP 1: CA Setup ────────────────────────────────────────────
+1: function(){
+  const pk = hexrand(64);
+  const sk = hexrand(64);
+  const vk = hexrand(64);
+  const salt= hexrand(32);
+  state.ca = { pk, sk, vk, salt, rotations:0, ts: state.simTime };
+  state.simTime += 2.4;
+  updateClock();
 
-// ============================================================
-// LOG SYSTEM
-// ============================================================
-function log(tag, msg, type='INFO'){
-  const entry = {
-    ts: new Date().toLocaleTimeString('en',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'}),
-    simTs: ts(),
-    tag, msg, type
-  };
-  state.logEntries.push(entry);
-  renderLogEntry(entry);
-}
-
-function renderLogEntry(entry){
-  if(state.logFilter !== 'ALL' && entry.tag !== state.logFilter) return;
-  const el = document.createElement('div');
-  el.className = `log-entry log-${entry.tag}`;
-  el.innerHTML = `<span class="log-ts">${entry.ts}</span><span class="log-tag">${entry.tag}</span><span class="log-msg">${entry.msg}</span>`;
-  const ls = document.getElementById('logStream');
-  ls.appendChild(el);
-  ls.scrollTop = ls.scrollHeight;
-}
-
-function clearLog(){ document.getElementById('logStream').innerHTML=''; state.logEntries=[]; }
-
-function toggleFilter(btn, filter){
-  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  state.logFilter = filter;
-  document.getElementById('logStream').innerHTML = '';
-  state.logEntries.forEach(e => renderLogEntry(e));
-}
-
-// ============================================================
-// METRIC UPDATES
-// ============================================================
-function updateMetric(id, val){ document.getElementById(id).textContent = val; }
-function updateMetrics(m){
-  updateMetric('mVehicles', m.vehicles||0);
-  updateMetric('mAuthenticated', m.authenticated||0);
-  updateMetric('mPlatoons', m.platoons||0);
-  updateMetric('mAttacks', m.attacks||0);
-  updateMetric('mChainTx', m.chainTx||0);
-  updateMetric('mVotes', m.votes||0);
-  updateMetric('mBanned', m.banned||0);
-  updateMetric('mProofMs', (m.proofMs||0).toFixed(2));
-}
-
-// ============================================================
-// STEP MANAGEMENT
-// ============================================================
-function activateStep(n){
-  document.querySelectorAll('.pipe-step').forEach(el=>el.classList.remove('active'));
-  const el = document.getElementById('step'+n);
-  if(el){ el.classList.add('active'); }
-  state.currentStep = n;
-  const names = ['','SUMO Init','CA Setup','Vehicle Auth','Blockchain Init','Platoon Formation','CATS Beacons','Attack Injection','Reputation Update','Chain + DB Log'];
-  document.getElementById('activeStepBadge').textContent = `Step ${n} / 9`;
-  document.getElementById('activeStepName').textContent = names[n]||'';
-}
-
-function markStepDone(n){
-  const el = document.getElementById('step'+n);
-  if(el){ el.classList.remove('running','active'); el.classList.add('done'); }
-  state.completedSteps.add(n);
-}
-
-function markStepRunning(n){
-  const el = document.getElementById('step'+n);
-  if(el){ el.classList.add('running'); el.classList.remove('done'); }
-}
-
-function setStatus(s){
-  const p = document.getElementById('statusPill');
-  p.className = 'status-pill';
-  if(s==='RUNNING'){ p.classList.add('pill-running'); p.textContent='RUNNING'; }
-  else if(s==='DONE'){ p.classList.add('pill-ready'); p.textContent='DONE'; }
-  else if(s==='ERROR'){ p.classList.add('pill-error'); p.textContent='ERROR'; }
-  else { p.classList.add('pill-ready'); p.textContent='READY'; }
-}
-
-// ============================================================
-// RESULT BLOCK BUILDER
-// ============================================================
-function addResult(headerHtml, bodyHtml, tagClass='tag-info'){
-  const em = document.getElementById('emptyState');
-  if(em) em.remove();
-  const block = document.createElement('div');
-  block.className = 'result-block';
-  block.innerHTML = `
-    <div class="result-header" onclick="toggleResult(this)">
-      ${headerHtml}
-      <span class="rh-time">T=${ts()}s</span>
-      <span class="rh-toggle">▾</span>
-    </div>
-    <div class="result-body">${bodyHtml}</div>`;
-  document.getElementById('resultsArea').prepend(block);
-  block.scrollIntoView({behavior:'smooth'});
-}
-
-function toggleResult(hdr){
-  hdr.classList.toggle('collapsed');
-  hdr.nextElementSibling.classList.toggle('hidden');
-}
-
-function kv(label, val, cls='v-accent'){
-  return `<div class="kv"><div class="k">${label}</div><div class="v ${cls}">${val}</div></div>`;
-}
-
-// ============================================================
-// STEP EXECUTORS — each simulates what the Python script does
-// ============================================================
-
-async function executeStep1(){
-  const cfg = getInputs();
-  markStepRunning(1);
-  log('INFO','Loading guindy.net.xml…');
-  await delay(600);
-  const edges = ['main_0','main_1','main_2','main_3','side1','side1_connector','side2'];
-  const routes = ['r_main','r_side1','r_side2'];
-  log('INFO',`Parsed ${edges.length} edges, ${routes.length} routes`);
-  log('INFO',`Written tmp_generated.sumocfg (step-length=0.1s)`);
-  log('INFO',`TraCI started → sumo-gui -c tmp_generated.sumocfg`);
-  log('INFO',`RSU POIs loaded from rsu.add.xml`);
-
-  addResult(
-    `<span class="rh-tag tag-info">SUMO</span><span class="rh-title">Network Initialised — Guindy Road Network</span>`,
-    `<div class="data-grid">
-      ${kv('Edges Loaded', edges.length, 'v-accent')}
-      ${kv('Routes', routes.length, 'v-green')}
-      ${kv('Step Length', '0.1 s', 'v-warn')}
-      ${kv('Sim Duration', cfg.simDur+' s', 'v-orange')}
-      ${kv('RSU POIs', 4, 'v-purple')}
-      ${kv('TraCI Port', 9999, 'v-accent')}
-    </div>
-    <div class="mono-block">[SUMO] r_main edges: ['main_0','main_1','main_2','main_3']
-[SUMO] r_side1 edges: ['side1_connector','main_1']
-[SUMO] r_side2 edges: ['side2','main_2']
-[RSU] loaded 4 POIs from rsu.add.xml
-[SUMO] wrote sumo_platoon/tmp_generated.sumocfg
-[SUMO] starting: sumo-gui -c tmp_generated.sumocfg --step-length 0.1</div>
-    <div class="platoon-visual">
-      <div class="platoon-row">
-        <span class="platoon-label">P1 SPAWN</span>
-        ${[...Array(cfg.p1Size)].map((_,i)=>`<div class="vehicle-chip vc-p1">v_p1_${i+1}</div>`).join('')}
+  const logs = [
+    {ts:'0.00',tag:'CA',cls:'tag-ca',   msg:'<span class="hl">CertificationAuthority.__init__</span> — master secret generated (32 bytes)'},
+    {ts:'0.02',tag:'CA',cls:'tag-ca',   msg:'Algorithm 1: <span class="ok">(Pk,Vk)=KeyGen(R,C)</span> — circuit & proving key derived'},
+    {ts:'0.05',tag:'CA',cls:'tag-ca',   msg:'Pk distributed to all provers (public broadcast)'},
+    {ts:'0.06',tag:'CA',cls:'tag-ca',   msg:'Vk stored at CA only — never shared'},
+    {ts:'0.08',tag:'CA',cls:'tag-ca',   msg:'KeyPair generated: PK_CA=<span class="ok">'+pk.slice(0,16)+'…</span>'},
+    {ts:'0.09',tag:'CA',cls:'tag-ca',   msg:'SK_CA=<span class="warn">'+sk.slice(0,16)+'…</span> (private, CA memory only)'},
+    {ts:'0.10',tag:'CA',cls:'tag-ca',   msg:'Salt=<span class="hl">'+salt.slice(0,16)+'…</span> embedded into timestamp'},
+    {ts:'2.40',tag:'CA',cls:'tag-ca',   msg:'<span class="ok">✓ CA Setup complete. Key rotation interval = 60s</span>'},
+  ];
+  return buildStepView({
+    panelA_title:'INPUT — Algorithm 1 Parameters',
+    panelA: `
+      <div class="kv-grid">
+        <div class="kv-item"><div class="kv-label">IdCA</div><div class="kv-val accent">CA_ROOT</div></div>
+        <div class="kv-item"><div class="kv-label">Timestamp TS</div><div class="kv-val accent">${state.simTime.toFixed(3)}s</div></div>
+        <div class="kv-item"><div class="kv-label">Salt (random)</div><div class="kv-val">${salt.slice(0,20)}…</div></div>
+        <div class="kv-item"><div class="kv-label">Key Rotation</div><div class="kv-val accent">60.0s</div></div>
       </div>
-      <div class="platoon-row">
-        <span class="platoon-label">P2 SPAWN</span>
-        ${[...Array(cfg.p2Size)].map((_,i)=>`<div class="vehicle-chip vc-p2">v_p2_${i+1}</div>`).join('')}
+      <div class="code-block">
+<span class="cm"># Algorithm 1: KeyGen(IdCA, TS)</span>
+<span class="kw">def</span> <span class="fn">_setup</span>(self):
+    self.Pk = hmac.<span class="fn">new</span>(master_secret,
+        (<span class="str">"proving_key_"</span> + self.id_ca).<span class="fn">encode</span>(),
+        hashlib.sha256).<span class="fn">hexdigest</span>()
+    self.Vk = hmac.<span class="fn">new</span>(master_secret,
+        (<span class="str">"verification_key_"</span> + self.id_ca).<span class="fn">encode</span>(),
+        hashlib.sha256).<span class="fn">hexdigest</span>()
+    self.current_key = self.<span class="fn">_gen_kp</span>(ts=<span class="num">0.0</span>)
+      </div>`,
+    panelB_title:'OUTPUT — Keys Generated',
+    panelB: `
+      <div class="kv-grid">
+        <div class="kv-item"><div class="kv-label">Pk (Proving Key)</div><div class="kv-val ok">${pk.slice(0,28)}…</div></div>
+        <div class="kv-item"><div class="kv-label">Vk (Verification Key)</div><div class="kv-val warn">${vk.slice(0,28)}… 🔒</div></div>
+        <div class="kv-item"><div class="kv-label">PK_CA (Current)</div><div class="kv-val accent">${pk.slice(0,28)}…</div></div>
+        <div class="kv-item"><div class="kv-label">SK_CA (Private)</div><div class="kv-val warn">${sk.slice(0,28)}… 🔒</div></div>
       </div>
-    </div>`
-  );
+      <div class="kv-grid" style="grid-template-columns:1fr 1fr 1fr;">
+        <div class="kv-item"><div class="kv-label">Status</div><div class="kv-val ok">✓ ACTIVE</div></div>
+        <div class="kv-item"><div class="kv-label">Key Rotations</div><div class="kv-val">0</div></div>
+        <div class="kv-item"><div class="kv-label">Gen Time</div><div class="kv-val accent">2.4 ms</div></div>
+      </div>`,
+    logs,
+    panelD: buildNoChart()
+  }, 'CA Setup — Algorithm 1: KeyGen(IdCA,TS)');
+},
 
-  state.vehicles = buildVehicles(cfg);
-  state.metrics.vehicles = cfg.p1Size + cfg.p2Size;
-  state.metrics.platoons = 2;
-  updateMetrics(state.metrics);
-  markStepDone(1);
-}
+// ─── STEP 2: Vehicle Auth ─────────────────────────────────────────
+2: function(){
+  const proofMs = [];
+  state.vehicles.forEach(v => {
+    const salt = hexrand(32);
+    const fakeId = hexrand(32);
+    const skv = hexrand(64);
+    const pkv = hexrand(64);
+    const proof = hexrand(64);
+    const genMs = randFloat(1.8, 4.2).toFixed(3);
+    const verMs = randFloat(0.4, 1.1).toFixed(3);
+    v.fakeId = fakeId; v.skv = skv; v.pkv = pkv;
+    v.proof = proof; v.authed = true; v.trust = 80;
+    v.genMs = +genMs; v.verMs = +verMs;
+    proofMs.push(+genMs);
+    state.stats.txs++;
+  });
+  const avgGen = (proofMs.reduce((a,b)=>a+b,0)/proofMs.length).toFixed(3);
+  const avgVer = (proofMs.reduce((a,b)=>a+b,0)/proofMs.length * 0.28).toFixed(3);
+  state.stats.vehicles = 10; state.stats.authed = 10;
+  state.stats.proof = avgGen + 'ms'; state.simTime += 8.2; updateClock(); updateStats();
 
-async function executeStep2(){
-  markStepRunning(2);
-  log('AUTH','[CA] Setup initiated — KeyGen(R,C)');
-  await delay(500);
-  const pk = genHex(32); const vk = genHex(32);
-  const pkCa = genHex(32); const skCa = genHex(32);
-  log('AUTH',`Pk=${pk.slice(0,16)}... PK_CA=${pkCa.slice(0,16)}...`);
-  log('AUTH','Key rotation interval: 60s | Proof reuse window: 10s');
-
-  addResult(
-    `<span class="rh-tag tag-auth">AUTH</span><span class="rh-title">CA Key Setup — Algorithm 1: KeyGen(IdCA, TS)</span>`,
-    `<div class="data-grid">
-      ${kv('Proving Key (Pk)', pk.slice(0,16)+'…', 'v-accent')}
-      ${kv('Verif Key (Vk)', vk.slice(0,16)+'…', 'v-green')}
-      ${kv('PK_CA', pkCa.slice(0,16)+'…', 'v-orange')}
-      ${kv('SK_CA', '[PRIVATE]', 'v-danger')}
-      ${kv('Rotation Interval', '60 s', 'v-warn')}
-      ${kv('Proof Reuse Win.', '10 s', 'v-accent')}
-    </div>
-    <div class="proof-viz">
-      <div class="proof-box">
-        <div class="pb-label">Pk — Public Proving Key (broadcast to all vehicles)</div>
-        <div class="pb-val">${pk}</div>
-      </div>
-      <div class="proof-arrow"><span>→</span><div class="pa-label">KEY GEN</div></div>
-      <div class="proof-box">
-        <div class="pb-label">PK_CA — CA Public Key (embedded in every ZK proof)</div>
-        <div class="pb-val">${pkCa}</div>
-      </div>
-    </div>
-    <div class="mono-block">[CA] Setup Pk=${pk.slice(0,16)}... PK_CA=${pkCa.slice(0,16)}...
-[CA] Vk (PRIVATE) = ${vk.slice(0,16)}...
-[CA] SK_CA (PRIVATE, MASTER_SECRET secured)
-[CA] Key rotation every 60.0s sim-time
-[CA] Proof timestamp reuse window = 10.0s</div>`
-  );
-  markStepDone(2);
-}
-
-async function executeStep3(){
-  const cfg = getInputs();
-  markStepRunning(3);
-  const vids = [...Array(cfg.p1Size)].map((_,i)=>`v_p1_${i+1}`).concat([...Array(cfg.p2Size)].map((_,i)=>`v_p2_${i+1}`));
-  let authLog = '';
-  let totalGenMs = 0, totalVerMs = 0;
-  let results = [];
-
-  for(const vid of vids){
-    await delay(80);
-    const genMs = rnd(0.08, 0.25);
-    const verMs = rnd(0.03, 0.10);
-    totalGenMs += genMs; totalVerMs += verMs;
-    const fakeId = genHash('f');
-    const sm = genHex(32); const x = genHex(32); const proof = genHex(32);
-    log('AUTH',`Alg2: Registered ${vid} → FIdv=${fakeId.slice(0,12)}…`);
-    log('AUTH',`Alg4: ACCEPTED ${vid} gen=${genMs.toFixed(3)}ms verify=${verMs.toFixed(3)}ms`);
-    authLog += `[CA] Auth ACCEPTED ${vid} FIdv=${fakeId.slice(0,12)}... gen=${genMs.toFixed(3)}ms verify=${verMs.toFixed(3)}ms | PROOF_VALID\n`;
-    results.push({vid, fakeId, sm, x, proof, genMs, verMs, accepted:true});
-    const v = state.vehicles.find(vv=>vv.id===vid);
-    if(v){ v.authenticated=true; v.fakeId=fakeId; }
-  }
-
-  state.metrics.authenticated = vids.length;
-  state.metrics.proofMs = totalGenMs / vids.length;
-  updateMetrics(state.metrics);
-
-  const avgGen = (totalGenMs/vids.length).toFixed(3);
-  const avgVer = (totalVerMs/vids.length).toFixed(3);
-
-  // Show first vehicle proof viz in detail
-  const r0 = results[0];
-
-  addResult(
-    `<span class="rh-tag tag-auth">ZKP AUTH</span><span class="rh-title">Vehicle Authentication — Alg 2 + 3 + 4 (${vids.length} vehicles)</span>`,
-    `<div class="data-grid">
-      ${kv('Vehicles Registered', vids.length, 'v-accent')}
-      ${kv('Accepted', vids.length, 'v-green')}
-      ${kv('Rejected', 0, 'v-danger')}
-      ${kv('Avg Proof Gen', avgGen+' ms', 'v-warn')}
-      ${kv('Avg CA Verify', avgVer+' ms', 'v-orange')}
-      ${kv('ZK Violations', 0, 'v-green')}
-    </div>
-    <div class="proof-viz">
-      <div class="proof-box">
-        <div class="pb-label">Alg 3 — ZK Proof (${r0.vid})</div>
-        <div class="pb-val">sm = ${r0.sm}<br/>x  = ${r0.x}</div>
-      </div>
-      <div class="proof-arrow"><span>→</span><div class="pa-label">CA VERIFY</div></div>
-      <div class="proof-box">
-        <div class="pb-label">Alg 4 — Verification Result</div>
-        <div class="pb-val">proof = ${r0.proof}<br/>status = <span style="color:var(--accent3)">PROOF_VALID ✓</span></div>
-      </div>
-    </div>
-    <div class="mono-block">${authLog}
-[Security] VI.A SOUNDNESS: 0 violations
-[Security] VI.B COMPLETENESS: 0 false rejections
-[Security] VI.C ZERO-KNOWLEDGE: 0 leakages</div>`
-  );
-  markStepDone(3);
-}
-
-async function executeStep4(){
-  const cfg = getInputs();
-  markStepRunning(4);
-  const isEnabled = cfg.blockchain !== 'disabled';
-  const vids = [...Array(cfg.p1Size)].map((_,i)=>`v_p1_${i+1}`).concat([...Array(cfg.p2Size)].map((_,i)=>`v_p2_${i+1}`));
-
-  if(isEnabled){
-    log('BLOCK',`Connected to Ganache chainId=1337 deployer=0x${genHex(20)}`);
-    log('BLOCK','CATS.sol deployed → 0x'+genHex(20));
-    log('BLOCK','VehicleTrust.sol deployed → 0x'+genHex(20));
-  } else {
-    log('BLOCK','Blockchain DISABLED — using offline fallback (score=70)');
-  }
-
-  let chainLog = '';
-  let txCount = 0;
-  const cells = [];
-
-  for(const vid of vids){
-    await delay(70);
-    if(isEnabled){
-      log('BLOCK',`VehicleTrust.setTrustScore(${vid}, 80)`);
-      log('BLOCK',`CATS.updateReputation(${vid}, 80, Trusted)`);
-      txCount += 2;
-    }
-    chainLog += `[Blockchain] VehicleTrust.setTrustScore(${vid}, 80)\n[Blockchain] CATS.updateReputation(${vid}, 80, Trusted)\n`;
-    cells.push(`<div class="chain-cell"><div class="c-hash">0x${genHex(8)}…</div><div class="c-vid">${vid}</div><div class="c-score">80</div></div>`);
-  }
-
-  state.metrics.chainTx = txCount;
-  updateMetrics(state.metrics);
-
-  addResult(
-    `<span class="rh-tag tag-bc">BLOCKCHAIN</span><span class="rh-title">Initial Trust Score = 80 Registered On-Chain</span>`,
-    `<div class="data-grid">
-      ${kv('Provider', isEnabled?'Ganache:7545':'DISABLED', isEnabled?'v-accent':'v-danger')}
-      ${kv('Txs Submitted', txCount, 'v-orange')}
-      ${kv('Trust Score Set', 80, 'v-green')}
-      ${kv('Contract: VehicleTrust', '0x'+genHex(8)+'…', 'v-purple')}
-      ${kv('Contract: CATS', '0x'+genHex(8)+'…', 'v-purple')}
-      ${kv('Gas Limit', '3,000,000', 'v-warn')}
-    </div>
-    <div class="chain-block">${cells.join('<div class="chain-arrow">→</div>')}</div>
-    <div class="mono-block">${chainLog}</div>`
-  );
-  markStepDone(4);
-}
-
-async function executeStep5(){
-  const cfg = getInputs();
-  markStepRunning(5);
-  log('PLATOON',`Platoon-1 (${cfg.p1Size} vehicles) spawned on main_0`);
-  log('PLATOON','Leader v_p1_1 confidence assigned');
-  await delay(400);
-
-  const leaders = state.vehicles.filter(v=>v.id.endsWith('_1')).map(v=>{
-    const c = rnd(0.5,1.0);
-    log('PLATOON',`[CONF] ${v.id} confidence=${c.toFixed(3)} — bully election`);
-    return {vid:v.id, pidx:v.pidx, conf:c};
+  const logs = [];
+  state.vehicles.forEach((v,i) => {
+    const t = (0.2+i*0.8).toFixed(2);
+    logs.push({ts:t, tag:'AUTH', cls:'tag-auth', msg:`<span class="hl">${v.id}</span> Alg2: registered → FIdv=<span class="ok">${v.fakeId.slice(0,12)}…</span>`});
+    logs.push({ts:(+t+0.1).toFixed(2), tag:'AUTH', cls:'tag-auth', msg:`<span class="hl">${v.id}</span> Alg3: proof generated in <span class="ok">${v.genMs.toFixed(3)}ms</span>`});
+    logs.push({ts:(+t+0.2).toFixed(2), tag:'AUTH', cls:'tag-auth', msg:`<span class="hl">${v.id}</span> Alg4: CA verified → <span class="ok">PROOF_VALID</span> (${v.verMs.toFixed(3)}ms)`});
   });
 
-  await delay(300);
-  log('PLATOON','[EVENT] P2 triggered spawn from side1_connector at step 1340');
-  await delay(300);
-  log('PLATOON',`[PLATOON] v_p2_1 → requesting merge (tail-to-head dist = 34.8m)`);
-  log('PLATOON','[PLATOON] Merged: elected leader v_p1_1 (Bully Algorithm)');
-  await delay(200);
-  log('PLATOON','[LEAVE] step 2300: v_p1_3 split — platoon divided into 2 groups');
+  return buildStepView({
+    panelA_title:'INPUT — Vehicle Registration (Alg 2+3)',
+    panelA: `
+      <div class="code-block">
+<span class="cm"># Algorithm 2: Register Vehicle</span>
+<span class="cm"># FIdv = Hash(Salt(Idv))  → privacy: real_id never stored</span>
+salt_v = secrets.<span class="fn">token_bytes</span>(<span class="num">16</span>)
+fake_id = sha256(salt_v + real_id).<span class="fn">hexdigest</span>()[:<span class="num">32</span>]
+sk_v = hmac.<span class="fn">new</span>(sk_ca, fake_id+<span class="str">"_priv"</span>)
+pk_v = hmac.<span class="fn">new</span>(sk_ca, sk_v+fake_id)
 
-  const p1Chips = [...Array(cfg.p1Size)].map((_,i)=>`<div class="vehicle-chip ${i===0?'vc-merged':i===cfg.p1Size-1&&cfg.malVehicle!='none'?'vc-malicious':'vc-p1'}">v_p1_${i+1}${i===0?' ★':i===cfg.p1Size-1&&cfg.malVehicle!='none'?' ⚠':''}</div>`).join('');
-  const p2Chips = [...Array(cfg.p2Size)].map((_,i)=>`<div class="vehicle-chip vc-p2">v_p2_${i+1}</div>`).join('');
-
-  state.metrics.platoons = 2;
-  updateMetrics(state.metrics);
-
-  addResult(
-    `<span class="rh-tag tag-platoon">PLATOON</span><span class="rh-title">Platoon Lifecycle — Join → Merge → Split</span>`,
-    `<div class="data-grid">
-      ${kv('P1 Vehicles', cfg.p1Size, 'v-accent')}
-      ${kv('P2 Vehicles', cfg.p2Size, 'v-accent')}
-      ${kv('Merge Step', 1800, 'v-warn')}
-      ${kv('Split Step', 2300, 'v-orange')}
-      ${kv('Desired Gap', '20 m', 'v-green')}
-      ${kv('Leader Alg', 'Bully', 'v-purple')}
-    </div>
-    <div class="platoon-visual">
-      <div class="platoon-row">
-        <span class="platoon-label">PLATOON 1</span>${p1Chips}
-        <span style="font-size:11px;color:var(--muted);margin-left:4px;">★ leader</span>
+<span class="cm"># Algorithm 3: Generate ZK Proof</span>
+sig  = hmac.<span class="fn">new</span>(sk_v, real_id)          <span class="cm"># Eq17</span>
+sm   = sha256(nonce + sig + str(T))    <span class="cm"># Eq17</span>
+x    = sha256(sm + pk_ca)              <span class="cm"># Eq18</span>
+proof= sha256(Pk + x + Hash(w))        <span class="cm"># Eq20</span>
+      </div>`,
+    panelB_title:'OUTPUT — Authenticated Vehicles',
+    panelB: state.vehicles.map(v=>`
+      <div class="vehicle-row">
+        <div class="vr-id">${v.id}</div>
+        <div style="flex:1;font-family:var(--font-mono);font-size:9.5px;color:var(--text-muted);">FIdv: ${v.fakeId.slice(0,14)}…</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--green);">✓ ${v.genMs.toFixed(2)}ms</div>
+      </div>`).join(''),
+    logs,
+    panelD: `
+      <div class="kv-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:8px;">
+        <div class="kv-item"><div class="kv-label">Avg Gen (Fig 3)</div><div class="kv-val ok">${avgGen} ms</div></div>
+        <div class="kv-item"><div class="kv-label">Avg Verify (Fig 4)</div><div class="kv-val ok">${avgVer} ms</div></div>
+        <div class="kv-item"><div class="kv-label">Total Auth'd</div><div class="kv-val ok">10 / 10</div></div>
       </div>
-      <div class="platoon-row">
-        <span class="platoon-label">PLATOON 2</span>${p2Chips}
-        <span style="font-size:11px;color:var(--accent3);margin-left:8px;">→ merges at T≈180s</span>
-      </div>
-      <div class="platoon-row">
-        <span class="platoon-label">MERGED</span>
-        <span class="merge-arrow">⊕</span>
-        <span style="font-size:12px;color:var(--accent3);">All ${cfg.p1Size+cfg.p2Size} vehicles under single leader (v_p1_1) — recoloured green</span>
-      </div>
-    </div>
-    <div class="mono-block">[RSU rsu_0] P1-01 joined pid=mock-P1
-[RSU rsu_0] P2-01 joined pid=mock-P2
-[PLATOON] v_p2_1 → merge tail-to-head=34.8m ≤ 35m+0.75 tolerance
-[PLATOON] do_merge leader=P1-01 src=mock-P1 dst=mock-P2
-[PLATOON] merged: elected leader v_p1_1 (confidence=0.${Math.floor(Math.random()*90)+10})
-[LEAVE] step 2300: v_p1_3 split → ahead=${Math.floor(cfg.p1Size/2)} behind=${cfg.p1Size-Math.floor(cfg.p1Size/2)-1}</div>`
-  );
-  markStepDone(5);
-}
+      <div class="kv-item" style="background:rgba(0,228,160,0.05);border-color:rgba(0,228,160,0.2);padding:8px 12px;">
+        <div class="kv-label">ZK Property</div>
+        <div class="kv-val" style="font-size:10px;color:var(--text-secondary);margin-top:3px;">Verifier checks Hash(w) without seeing w=(SK_v,PK_v) — zero-knowledge property preserved. PL receives ONLY accepted bit, never reason string.</div>
+      </div>`
+  }, 'Vehicle Auth — ZKP Register + Prove (Alg 2+3+4)');
+},
 
-async function executeStep6(){
-  const cfg = getInputs();
-  markStepRunning(6);
-  const totalVeh = cfg.p1Size + cfg.p2Size;
-  const beaconCount = totalVeh * 50 * 3; // 50Hz × ~3s sample
-  log('CATS',`Broadcasting beacon messages at 50 Hz for ${totalVeh} vehicles`);
-  await delay(500);
-  log('CATS','V2V comm range: 300m | Beacon verification range: 50m');
-  log('CATS','Obstacle verification range: 70m');
-  log('CATS',`Processed ~${beaconCount} beacon messages in T=0–30s window`);
+// ─── STEP 3: Blockchain Init ──────────────────────────────────────
+3: function(){
+  const contractAddr = '0x'+hexrand(40);
+  const catsAddr     = '0x'+hexrand(40);
+  const txHashes = state.vehicles.map(()=>'0x'+hexrand(64));
+  state.vehicles.forEach((v,i)=>{ v.rep=80; v.trust=80; v.chainTx=txHashes[i]; });
+  state.stats.txs += state.vehicles.length + 2; // deploy + per vehicle
+  state.stats.platoons = 2; state.simTime += 5.1; updateClock(); updateStats();
 
-  // Sample beacons
-  const sampleBeacons = [];
-  for(let i=0;i<5;i++){
-    const vid = state.vehicles[Math.floor(Math.random()*state.vehicles.length)];
-    sampleBeacons.push(`BeaconMsg sender=${vid.id} lane=main_0_0 pos=${rnd(50,400).toFixed(1)} spd=${(cfg.leaderSpd+rnd(-1,1)).toFixed(2)} acc=${rnd(-0.5,0.5).toFixed(3)} seq=${i*12+1}`);
-  }
-
-  state.metrics.votes += totalVeh * 8;
-  updateMetrics(state.metrics);
-
-  addResult(
-    `<span class="rh-tag tag-cats">CATS</span><span class="rh-title">V2V Beacon & Obstacle Messages — Kinematic Verification</span>`,
-    `<div class="data-grid">
-      ${kv('Beacon Frequency', '50 Hz', 'v-accent')}
-      ${kv('Comm Range', '300 m', 'v-green')}
-      ${kv('Verify Range', '50 m', 'v-warn')}
-      ${kv('Position Threshold', '5 m', 'v-orange')}
-      ${kv('Msgs/Veh/Sec', 50, 'v-purple')}
-      ${kv('Total Msgs (est)', beaconCount, 'v-accent')}
-    </div>
-    <div style="margin-top:4px;">
-      <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:6px;">SAMPLE BEACON STREAM</div>
-      <div class="mono-block">${sampleBeacons.join('\n')}</div>
-    </div>
-    <div style="margin-top:8px;">
-      <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:6px;">VERIFIER OUTCOME (benign window T=0–30s)</div>
-      <div class="data-grid">
-        ${kv('UPVOTEs', totalVeh*7, 'v-green')}
-        ${kv('DOWNVOTEs', 0, 'v-danger')}
-        ${kv('NO_VOTEs', totalVeh*5, 'v-muted')}
-      </div>
-    </div>`
-  );
-  markStepDone(6);
-}
-
-async function executeStep7(){
-  const cfg = getInputs();
-  markStepRunning(7);
-
-  const attacks = [
-    {type:'FALSE_OBSTACLE', vehicle:cfg.malVehicle!='none'?cfg.malVehicle:'v_p1_6', start:30, end:60, color:'atk-false',
-     desc:`<strong>${cfg.malVehicle!='none'?cfg.malVehicle:'v_p1_6'}</strong> broadcasts obstacle_in_lane=True at position+50m. Receivers apply SEVERE_DOWNVOTE.`},
-    {type:'INCORRECT_BEACON', vehicle:cfg.malVehicle!='none'?cfg.malVehicle:'v_p1_6', start:80, end:110, color:'atk-beacon',
-     desc:`<strong>${cfg.malVehicle!='none'?cfg.malVehicle:'v_p1_6'}</strong> reports position offset +20m, speed ×1.5. Kinematic prediction fails → DOWNVOTE.`},
-    {type:'SYBIL_ATTACK', vehicle:'v_p1_5', start:120, end:180, color:'atk-sybil',
-     desc:`<strong>v_p1_5</strong> creates 3 fake CA identities (v_p1_5_sybil_0/1/2). CA detects >1 registration per physical ID → blacklists fake_ids.`},
-    {type:'GPS_SPOOFING', vehicle:'v_p2_2', start:160, end:210, color:'atk-spoof',
-     desc:`<strong>v_p2_2</strong> broadcasts fake pos=real+150m, speed=30 m/s. Deviation 150m >> threshold 15m → SEVERE_DOWNVOTE → BANNED.`},
+  const logs = [
+    {ts:'0.00',tag:'CHAIN',cls:'tag-chain',msg:'Connecting to Ganache @ <span class="hl">http://127.0.0.1:7545</span>'},
+    {ts:'0.12',tag:'CHAIN',cls:'tag-chain',msg:'Compiling <span class="hl">VehicleTrust.sol</span> (solc 0.8.17)'},
+    {ts:'0.88',tag:'CHAIN',cls:'tag-chain',msg:'VehicleTrust deployed → <span class="ok">'+contractAddr.slice(0,20)+'…</span>'},
+    {ts:'1.02',tag:'CHAIN',cls:'tag-chain',msg:'Compiling <span class="hl">CATS.sol</span> → commitments, votes, flags'},
+    {ts:'1.89',tag:'CHAIN',cls:'tag-chain',msg:'CATS deployed → <span class="ok">'+catsAddr.slice(0,20)+'…</span>'},
+    ...state.vehicles.map((v,i)=>({ts:(2.0+i*0.28).toFixed(2),tag:'CHAIN',cls:'tag-chain',
+      msg:`setTrustScore(<span class="hl">${v.id}</span>, <span class="num">80</span>) → tx: <span class="ok">${txHashes[i].slice(0,18)}…</span>`})),
+    {ts:'5.10',tag:'CHAIN',cls:'tag-chain',msg:`<span class="ok">✓ All ${state.vehicles.length} vehicles initialised on-chain. Total TXs: ${state.stats.txs}</span>`},
   ];
 
-  for(const atk of attacks){
-    await delay(200);
-    log('ATTACK',`[${atk.type}] ${atk.vehicle} T=${atk.start}s–${atk.end}s DETECTED`);
-    state.metrics.attacks++;
-    updateMetrics(state.metrics);
-  }
+  return buildStepView({
+    panelA_title:'INPUT — Smart Contracts',
+    panelA: `
+      <div class="code-block">
+<span class="cm">// VehicleTrust.sol — initial trust at login</span>
+<span class="kw">contract</span> <span class="fn">VehicleTrust</span> {
+    mapping(<span class="kw">string</span> => <span class="kw">uint</span>) <span class="kw">public</span> trustScore;
+    <span class="kw">function</span> <span class="fn">setTrustScore</span>(<span class="kw">string</span> vehicleID,
+                             <span class="kw">uint</span> score) <span class="kw">public</span> { … }
+    <span class="kw">function</span> <span class="fn">getTrustScore</span>(<span class="kw">string</span> vehicleID)
+        <span class="kw">public</span> <span class="kw">view</span> <span class="kw">returns</span>(<span class="kw">uint</span>) { … }
+}
+<span class="cm">// CATS.sol — reputation, votes, flags on-chain</span>
+<span class="kw">contract</span> <span class="fn">CATS</span> {
+    <span class="kw">struct</span> Reputation { <span class="kw">int256</span> score; <span class="kw">uint8</span> trustState; … }
+    <span class="kw">mapping</span>(bytes32 => Reputation) <span class="kw">public</span> reputations;
+}
+      </div>`,
+    panelB_title:'OUTPUT — On-chain Trust Scores',
+    panelB: state.vehicles.map(v=>`
+      <div class="vehicle-row">
+        <div class="vr-id">${v.id}</div>
+        <div class="vr-bar-wrap"><div class="vr-bar" style="width:80%;background:var(--green);"></div></div>
+        <div class="vr-score">80</div>
+        <div class="vr-state st-trusted">Trusted</div>
+      </div>`).join(''),
+    logs,
+    panelD: `
+      <div class="kv-grid" style="grid-template-columns:1fr 1fr;">
+        <div class="kv-item"><div class="kv-label">VehicleTrust.sol</div><div class="kv-val ok">${contractAddr.slice(0,22)}…</div></div>
+        <div class="kv-item"><div class="kv-label">CATS.sol</div><div class="kv-val ok">${catsAddr.slice(0,22)}…</div></div>
+        <div class="kv-item"><div class="kv-label">Chain</div><div class="kv-val accent">Ganache (local)</div></div>
+        <div class="kv-item"><div class="kv-label">Gas Limit</div><div class="kv-val">3,000,000</div></div>
+        <div class="kv-item"><div class="kv-label">Block TXs</div><div class="kv-val ok">${state.stats.txs}</div></div>
+        <div class="kv-item"><div class="kv-label">Initial Score</div><div class="kv-val ok">80 (on-chain)</div></div>
+      </div>`
+  }, 'Blockchain Init — VehicleTrust.sol + CATS.sol');
+},
 
-  // Update a vehicle reputation to banned
-  const malV = state.vehicles.find(v=>v.id===cfg.malVehicle||v.id==='v_p1_6');
-  if(malV){ malV.reputation=12; malV.trustState='Banned'; state.metrics.banned++; updateMetrics(state.metrics); }
-  const sybilV = state.vehicles.find(v=>v.id==='v_p1_5');
-  if(sybilV){ sybilV.reputation=38; sybilV.trustState='Untrusted'; }
-  const spoofV = state.vehicles.find(v=>v.id==='v_p2_2');
-  if(spoofV){ spoofV.reputation=5; spoofV.trustState='Banned'; state.metrics.banned++; updateMetrics(state.metrics); }
+// ─── STEP 4: CATS Init + Beacons ─────────────────────────────────
+4: function(){
+  state.simTime += 15; updateClock();
+  const beaconCount = Math.floor(state.simTime * 50 * 10); // 50Hz * 10 vehicles
+  state.stats.txs += 20;
 
-  addResult(
-    `<span class="rh-tag tag-attack">ATTACKS</span><span class="rh-title">4-Vector Attack Injection — Detection Results</span>`,
-    `<div class="attack-timeline">
-      ${attacks.map(a=>`
-      <div class="atk-event ${a.color}">
-        <div class="atk-time">${a.start}s–${a.end}s</div>
-        <div class="atk-detail"><strong>[${a.type}]</strong> ${a.desc}</div>
+  const logs = [
+    {ts:'0.00',tag:'CATS',cls:'tag-cats',msg:'ReputationManager initialised — CATS_COMM_RANGE=<span class="num">300m</span>'},
+    {ts:'0.02',tag:'CATS',cls:'tag-cats',msg:'Beacon frequency: <span class="num">50 Hz</span> (interval=0.02s)'},
+    {ts:'0.05',tag:'CATS',cls:'tag-cats',msg:'CATS_TRUSTED_THRESHOLD=<span class="num">70.0</span> CATS_UNTRUSTED_THRESHOLD=<span class="num">40.0</span>'},
+    {ts:'0.10',tag:'CATS',cls:'tag-cats',msg:'Verification ranges: Beacon=<span class="num">50m</span> Obstacle=<span class="num">70m</span>'},
+    {ts:'0.20',tag:'CATS',cls:'tag-cats',msg:'Kinematic verifier ready: max_speed=<span class="num">33.3 m/s</span> max_accel=<span class="num">2.6 m/s²</span>'},
+    {ts:'1.00',tag:'CATS',cls:'tag-cats',msg:'V2V beacons active — position+speed+accel broadcast per vehicle'},
+    {ts:'5.00',tag:'CATS',cls:'tag-cats',msg:`Beacons transmitted: <span class="ok">${beaconCount.toLocaleString()}</span> (${state.vehicles.length} vehicles × 50Hz)`},
+    {ts:'15.0',tag:'CATS',cls:'tag-cats',msg:'<span class="ok">✓ CATS operational. All vehicles in Trusted state.</span>'},
+  ];
+
+  return buildStepView({
+    panelA_title:'INPUT — CATS Configuration',
+    panelA: `
+      <div class="kv-grid" style="grid-template-columns:repeat(3,1fr);">
+        <div class="kv-item"><div class="kv-label">Beacon Hz</div><div class="kv-val accent">50 Hz</div></div>
+        <div class="kv-item"><div class="kv-label">Comm Range</div><div class="kv-val accent">300 m</div></div>
+        <div class="kv-item"><div class="kv-label">Sim Duration</div><div class="kv-val">270 s</div></div>
+        <div class="kv-item"><div class="kv-label">Rep Window</div><div class="kv-val">1.0 s</div></div>
+        <div class="kv-item"><div class="kv-label">Upvote τ</div><div class="kv-val ok">+1.0</div></div>
+        <div class="kv-item"><div class="kv-label">Downvote τ</div><div class="kv-val err">−5.0</div></div>
+        <div class="kv-item"><div class="kv-label">Severe τ</div><div class="kv-val err">−15.0</div></div>
+        <div class="kv-item"><div class="kv-label">Trusted ≥</div><div class="kv-val ok">70.0</div></div>
+        <div class="kv-item"><div class="kv-label">Banned ≤</div><div class="kv-val err">40.0</div></div>
+      </div>`,
+    panelB_title:'OUTPUT — Beacon Activity',
+    panelB: state.vehicles.map((v,i)=>{
+      const beacons = Math.floor(15 * 50);
+      return `
+      <div class="vehicle-row">
+        <div class="vr-id">${v.id}</div>
+        <div style="flex:1;font-family:var(--font-mono);font-size:9.5px;color:var(--text-muted);">${beacons} beacons · pos=${(4.6+i*2.1).toFixed(1)}m</div>
+        <div class="vr-state st-trusted">Trusted</div>
+      </div>`;}).join(''),
+    logs,
+    panelD: `
+      <div class="kv-grid" style="grid-template-columns:1fr 1fr 1fr;">
+        <div class="kv-item"><div class="kv-label">Beacon Rate</div><div class="kv-val ok">50 Hz</div></div>
+        <div class="kv-item"><div class="kv-label">Total Beacons</div><div class="kv-val ok">${beaconCount.toLocaleString()}</div></div>
+        <div class="kv-item"><div class="kv-label">V2V Active</div><div class="kv-val ok">10</div></div>
+      </div>
+      <div class="kv-item" style="margin-top:6px;background:rgba(0,228,160,0.05);border-color:rgba(0,228,160,0.2);padding:8px 12px;">
+        <div class="kv-label">Obstacle Detected</div>
+        <div class="kv-val" style="color:var(--text-secondary);font-size:10px;margin-top:3px;">
+          lane=main_0_0 pos=400–410m active from t=60s. Kinematic verification: |predicted−actual| &lt; 5.0m threshold.
+        </div>
+      </div>`
+  }, 'CATS Init + Beacons — ReputationManager + 50Hz V2V');
+},
+
+// ─── STEP 5: Platoon Ops ──────────────────────────────────────────
+5: function(){
+  state.simTime += 60; updateClock(); state.stats.txs += 8;
+
+  const logs = [
+    {ts:'20.0',tag:'PLATOON',cls:'tag-platoon',msg:'Platoon 1 formed: v_p1_1(leader) + v_p1_2…v_p1_6 via RSU'},
+    {ts:'20.5',tag:'PLATOON',cls:'tag-platoon',msg:'Platoon 2 formed: v_p2_1(leader) + v_p2_2…v_p2_4 via RSU'},
+    {ts:'35.0',tag:'PLATOON',cls:'tag-platoon',msg:'[JOIN] v_p2_4 joined platoon 2 — ZKP auth verified first'},
+    {ts:'45.0',tag:'PLATOON',cls:'tag-platoon',msg:'[MERGE] Platoon 1+2 merge attempt — inter-platoon distance &lt; 15m'},
+    {ts:'45.2',tag:'PLATOON',cls:'tag-platoon',msg:'[MERGE] Speed harmonised → 20.0 m/s (leader speed)'},
+    {ts:'55.0',tag:'PLATOON',cls:'tag-platoon',msg:'[LEAVE] v_p1_3 lane→main_0_1 (split: 3 ahead / 2 behind)'},
+    {ts:'60.0',tag:'PLATOON',cls:'tag-platoon',msg:'RSU bully-election: v_p1_1 re-elected as leader (highest ID)'},
+    {ts:'75.0',tag:'PLATOON',cls:'tag-platoon',msg:'<span class="ok">✓ Platoon ops stable. P1=5 members  P2=4 members.</span>'},
+  ];
+
+  return buildStepView({
+    panelA_title:'INPUT — RSU Platoon Commands',
+    panelA: `
+      <div class="kv-grid" style="grid-template-columns:1fr 1fr;">
+        <div class="kv-item"><div class="kv-label">Platoon 1 (P1)</div><div class="kv-val accent">v_p1_1…v_p1_6</div></div>
+        <div class="kv-item"><div class="kv-label">Platoon 2 (P2)</div><div class="kv-val accent">v_p2_1…v_p2_4</div></div>
+        <div class="kv-item"><div class="kv-label">Leader Speed</div><div class="kv-val">20.0 m/s</div></div>
+        <div class="kv-item"><div class="kv-label">Min Gap</div><div class="kv-val">5.0 m</div></div>
+        <div class="kv-item"><div class="kv-label">Election Algo</div><div class="kv-val">Bully (highest ID)</div></div>
+        <div class="kv-item"><div class="kv-label">Auth Required</div><div class="kv-val ok">ZKP before join</div></div>
+      </div>`,
+    panelB_title:'OUTPUT — Platoon Status',
+    panelB: `
+      <div style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);margin-bottom:8px;">PLATOON 1</div>
+      ${[1,2,3,4,5,6].map(i=>`
+      <div class="vehicle-row">
+        <div class="vr-id">v_p1_${i}</div>
+        <div style="flex:1;font-family:var(--font-mono);font-size:9.5px;color:var(--text-muted);">P1 · ${i===1?'Leader':'Member'} · pos=${(4.6+i*8.2).toFixed(1)}m</div>
+        <div class="vr-state st-trusted">Trusted</div>
       </div>`).join('')}
+      <div style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);margin:8px 0 4px;">PLATOON 2</div>
+      ${[1,2,3,4].map(i=>`
+      <div class="vehicle-row">
+        <div class="vr-id">v_p2_${i}</div>
+        <div style="flex:1;font-family:var(--font-mono);font-size:9.5px;color:var(--text-muted);">P2 · ${i===1?'Leader':'Member'} · pos=${(100+i*8).toFixed(1)}m</div>
+        <div class="vr-state st-trusted">Trusted</div>
+      </div>`).join('')}`,
+    logs,
+    panelD: `
+      <div class="kv-grid" style="grid-template-columns:repeat(3,1fr);">
+        <div class="kv-item"><div class="kv-label">Platoons</div><div class="kv-val ok">2</div></div>
+        <div class="kv-item"><div class="kv-label">Join Events</div><div class="kv-val">1</div></div>
+        <div class="kv-item"><div class="kv-label">Merge Events</div><div class="kv-val">1</div></div>
+        <div class="kv-item"><div class="kv-label">Leave Events</div><div class="kv-val">1</div></div>
+        <div class="kv-item"><div class="kv-label">RSU TXs</div><div class="kv-val">8</div></div>
+        <div class="kv-item"><div class="kv-label">Formations</div><div class="kv-val ok">Stable</div></div>
+      </div>`
+  }, 'Platoon Operations — Join / Merge / Leave via RSU');
+},
+
+// ─── STEP 6: Inject Attack ────────────────────────────────────────
+6: function(){
+  state.simTime += 90; updateClock();
+  state.stats.attacks = 4; updateStats();
+
+  const logs = [
+    {ts:'120.0',tag:'ATTACK',cls:'tag-attack',msg:'[SYBIL] v_p1_5 activated — registering 3 fake IDs with CA'},
+    {ts:'120.2',tag:'ATTACK',cls:'tag-attack',msg:'[SYBIL] Fake ID #1: <span class="err">'+hexrand(12)+'…</span> — duplicate registration DETECTED'},
+    {ts:'120.4',tag:'ATTACK',cls:'tag-attack',msg:'[SYBIL] CA: SYBIL_MAX_REGISTRATIONS=1 exceeded → block'},
+    {ts:'121.0',tag:'ATTACK',cls:'tag-attack',msg:'[SYBIL] Injecting fake votes via fake IDs → vote manipulation attempt'},
+    {ts:'130.0',tag:'ATTACK',cls:'tag-attack',msg:'[FALSE_OBS] v_p1_6 broadcasting fake obstacle at pos=500m (t=30–60s)'},
+    {ts:'130.5',tag:'ATTACK',cls:'tag-attack',msg:'[FALSE_OBS] Neighbours verify: no obstacle at 500m → downvote v_p1_6'},
+    {ts:'160.0',tag:'ATTACK',cls:'tag-attack',msg:'[SPOOF] v_p2_2 spoofing GPS: fake_pos='+hexrand(4)+'m (offset=150m)'},
+    {ts:'160.3',tag:'ATTACK',cls:'tag-attack',msg:'[SPOOF] RSU dead-reckoning deviation=<span class="err">153.7m</span> > threshold(15m) → FLAGGED'},
+    {ts:'160.5',tag:'ATTACK',cls:'tag-attack',msg:'[BEACON] v_p1_6 incorrect beacon speed=49.95 m/s (×1.5 multiplier)'},
+    {ts:'161.0',tag:'ATTACK',cls:'tag-attack',msg:'[BEACON] Kinematic violation: speed > CATS_MAX_SPEED(33.3) → downvote'},
+    {ts:'210.0',tag:'ATTACK',cls:'tag-attack',msg:'<span class="warn">✓ All 4 attack vectors active. Detection underway.</span>'},
+  ];
+
+  return buildStepView({
+    panelA_title:'INPUT — Attack Configuration',
+    panelA: `
+      <div class="code-block">
+<span class="cm"># Sybil Attack (v_p1_5)</span>
+SYBIL_ATTACKER_ID       = <span class="str">"v_p1_5"</span>
+SYBIL_ATTACK_START_TIME = <span class="num">120.0</span>
+SYBIL_NUM_FAKE_IDS      = <span class="num">3</span>
+SYBIL_MAX_REGISTRATIONS = <span class="num">1</span>  <span class="cm"># CA blocks excess</span>
+
+<span class="cm"># Spoofing Attack (v_p2_2)</span>
+SPOOFING_ATTACKER_ID    = <span class="str">"v_p2_2"</span>
+SPOOFING_POSITION_JUMP  = <span class="num">150.0</span>  <span class="cm"># metres</span>
+SPOOFING_DETECTION_THRESHOLD = <span class="num">15.0</span>
+
+<span class="cm"># False Obstacle (v_p1_6) — t=30..60s</span>
+<span class="cm"># Incorrect Beacon (v_p1_6) — t=80..110s</span>
+      </div>`,
+    panelB_title:'OUTPUT — Attack Timeline',
+    panelB: `
+      <div class="vehicle-row" style="border-color:rgba(255,77,106,0.3);">
+        <div class="vr-id" style="color:var(--red);">v_p1_5</div>
+        <div style="flex:1;font-size:10px;color:var(--text-secondary);">Sybil · 3 fake IDs · t=120–180s</div>
+        <div class="vr-state st-untrusted">Detected</div>
+      </div>
+      <div class="vehicle-row" style="border-color:rgba(255,77,106,0.3);">
+        <div class="vr-id" style="color:var(--red);">v_p1_6</div>
+        <div style="flex:1;font-size:10px;color:var(--text-secondary);">FalseObs + Beacon · t=30–110s</div>
+        <div class="vr-state st-untrusted">Detected</div>
+      </div>
+      <div class="vehicle-row" style="border-color:rgba(255,77,106,0.3);">
+        <div class="vr-id" style="color:var(--red);">v_p2_2</div>
+        <div style="flex:1;font-size:10px;color:var(--text-secondary);">GPS Spoof +150m · t=160–210s</div>
+        <div class="vr-state st-untrusted">Detected</div>
+      </div>
+      <div class="kv-item" style="margin-top:6px;background:rgba(255,77,106,0.04);border-color:rgba(255,77,106,0.2);padding:8px 12px;">
+        <div class="kv-label">Detection Mechanism</div>
+        <div class="kv-val" style="color:var(--text-secondary);font-size:10px;margin-top:3px;">RSU dead-reckoning cross-validation · CA duplicate-registration check · Peer kinematic verification · Vote-based reputation penalty</div>
+      </div>`,
+    logs,
+    panelD: `
+      <div class="kv-grid" style="grid-template-columns:repeat(2,1fr);">
+        <div class="kv-item"><div class="kv-label">Attack Vectors</div><div class="kv-val err">4</div></div>
+        <div class="kv-item"><div class="kv-label">Attackers</div><div class="kv-val err">3</div></div>
+        <div class="kv-item"><div class="kv-label">Sybil IDs Blocked</div><div class="kv-val ok">3</div></div>
+        <div class="kv-item"><div class="kv-label">Spoof Flagged</div><div class="kv-val ok">1</div></div>
+        <div class="kv-item"><div class="kv-label">FalseObs Rejected</div><div class="kv-val ok">Yes</div></div>
+        <div class="kv-item"><div class="kv-label">Beacon Violations</div><div class="kv-val ok">Detected</div></div>
+      </div>`
+  }, 'Inject Attack — Sybil · Spoof · FalseObs · Beacon');
+},
+
+// ─── STEP 7: Reputation Update ────────────────────────────────────
+7: function(){
+  state.simTime += 30; updateClock();
+  // Update vehicle reputations based on attacks
+  const attackers = {
+    'v_p1_5': {rep:28, state:'Banned',   reason:'Sybil: 3 fake IDs + vote manipulation'},
+    'v_p1_6': {rep:35, state:'Banned',   reason:'FalseObs + IncorrectBeacon'},
+    'v_p2_2': {rep:42, state:'Untrusted',reason:'GPS Spoof +150m deviation'},
+  };
+  state.vehicles.forEach(v => {
+    if(attackers[v.id]){
+      v.rep = attackers[v.id].rep;
+      v.state = attackers[v.id].state;
+      if(v.state==='Banned') state.stats.banned++;
+    } else {
+      v.rep = Math.min(100, 80 + Math.floor(Math.random()*8));
+      v.state = 'Trusted';
+    }
+  });
+  state.stats.txs += 30; updateStats();
+
+  const logs = [
+    {ts:'0.00',tag:'REP',cls:'tag-rep',msg:'Vote aggregation window = 1.0s — collecting peer votes'},
+    {ts:'1.00',tag:'REP',cls:'tag-rep',msg:'[v_p1_6] 8 downvotes (FalseObs) × −5.0 = −40.0 penalty'},
+    {ts:'2.00',tag:'REP',cls:'tag-rep',msg:'[v_p1_6] rep: 80→40→35 → state: Trusted→Untrusted→<span class="err">Banned</span>'},
+    {ts:'3.00',tag:'REP',cls:'tag-rep',msg:'[v_p1_5] Sybil votes filtered: 3 fake IDs stripped from tally'},
+    {ts:'4.00',tag:'REP',cls:'tag-rep',msg:'[v_p1_5] 6 downvotes × −5.0 = −30.0 → rep: 80→<span class="err">28 (Banned)</span>'},
+    {ts:'5.00',tag:'REP',cls:'tag-rep',msg:'[v_p2_2] Spoof penalty: −15.0 (severe) + −5×2 → rep: 80→<span class="warn">42 (Untrusted)</span>'},
+    {ts:'6.00',tag:'REP',cls:'tag-rep',msg:'Non-attackers: upvotes +1.0 each → avg rep=86.3'},
+    {ts:'8.00',tag:'REP',cls:'tag-rep',msg:'CATS.sol updateReputation() called for each vehicle → on-chain sync'},
+    {ts:'10.0',tag:'REP',cls:'tag-rep',msg:`<span class="ok">✓ Reputation update complete. Banned: ${state.stats.banned} | Untrusted: 1</span>`},
+  ];
+
+  const barColor = (rep)=> rep>=70?'var(--green)':rep>=40?'var(--amber)':'var(--red)';
+  const stateClass = (s) => s==='Trusted'?'st-trusted':s==='Untrusted'?'st-untrusted':'st-banned';
+
+  return buildStepView({
+    panelA_title:'INPUT — Vote Data (1s Window)',
+    panelA: `
+      <div class="kv-grid" style="grid-template-columns:repeat(3,1fr);">
+        <div class="kv-item"><div class="kv-label">Window Size</div><div class="kv-val accent">1.0 s</div></div>
+        <div class="kv-item"><div class="kv-label">Upvote Reward</div><div class="kv-val ok">+1.0</div></div>
+        <div class="kv-item"><div class="kv-label">Downvote Penalty</div><div class="kv-val err">−5.0</div></div>
+        <div class="kv-item"><div class="kv-label">Severe Penalty</div><div class="kv-val err">−15.0</div></div>
+        <div class="kv-item"><div class="kv-label">Trusted ≥</div><div class="kv-val">70.0</div></div>
+        <div class="kv-item"><div class="kv-label">Untrusted ≤</div><div class="kv-val">40.0</div></div>
+      </div>`,
+    panelB_title:'OUTPUT — Final Reputation Scores',
+    panelB: state.vehicles.map(v=>`
+      <div class="vehicle-row" style="${v.state==='Banned'?'border-color:rgba(255,77,106,0.3);':v.state==='Untrusted'?'border-color:rgba(244,166,35,0.3);':''}">
+        <div class="vr-id" style="${v.state==='Banned'?'color:var(--red);':v.state==='Untrusted'?'color:var(--amber)':''}">${v.id}</div>
+        <div class="vr-bar-wrap"><div class="vr-bar" style="width:${v.rep}%;background:${barColor(v.rep)};"></div></div>
+        <div class="vr-score">${v.rep}</div>
+        <div class="vr-state ${stateClass(v.state)}">${v.state}</div>
+      </div>`).join(''),
+    logs,
+    panelD: `
+      <div class="kv-grid" style="grid-template-columns:repeat(3,1fr);">
+        <div class="kv-item"><div class="kv-label">Trusted</div><div class="kv-val ok">${state.vehicles.filter(v=>v.state==='Trusted').length}</div></div>
+        <div class="kv-item"><div class="kv-label">Untrusted</div><div class="kv-val warn">${state.vehicles.filter(v=>v.state==='Untrusted').length}</div></div>
+        <div class="kv-item"><div class="kv-label">Banned</div><div class="kv-val err">${state.vehicles.filter(v=>v.state==='Banned').length}</div></div>
+        <div class="kv-item"><div class="kv-label">Chain Synced</div><div class="kv-val ok">Yes</div></div>
+        <div class="kv-item"><div class="kv-label">Window Updates</div><div class="kv-val ok">30</div></div>
+        <div class="kv-item"><div class="kv-label">DB Votes Logged</div><div class="kv-val ok">218</div></div>
+      </div>`
+  }, 'Reputation Update — Vote Aggregation (1s Window)');
+},
+
+// ─── STEP 8: Security Summary ─────────────────────────────────────
+8: function(){
+  state.simTime = 270; updateClock();
+  const avgGen = '2.847';
+  const avgVer = '0.793';
+  const logs = [
+    {ts:'270',tag:'SEC',cls:'tag-sec',msg:'─────────────────────────────────────────────'},
+    {ts:'270',tag:'SEC',cls:'tag-sec',msg:'SECURITY SUMMARY — Khan et al. IEEE TITS 2025'},
+    {ts:'270',tag:'SEC',cls:'tag-sec',msg:'─────────────────────────────────────────────'},
+    {ts:'270',tag:'SEC',cls:'tag-sec',msg:'Soundness (VI.A Eq21-22): <span class="ok">PASS</span> — all proof_x=H(sm‖PK_CA) valid'},
+    {ts:'270',tag:'SEC',cls:'tag-sec',msg:'Completeness (VI.B): <span class="ok">PASS</span> — all legit proofs accepted'},
+    {ts:'270',tag:'SEC',cls:'tag-sec',msg:'ZK property (VI.C Eq26-27): <span class="ok">PASS</span> — w=(SK_v,PK_v) never revealed'},
+    {ts:'270',tag:'SEC',cls:'tag-sec',msg:`Avg proof gen (Fig 3): <span class="ok">${avgGen} ms</span>`},
+    {ts:'270',tag:'SEC',cls:'tag-sec',msg:`Avg proof verify (Fig 4): <span class="ok">${avgVer} ms</span>`},
+    {ts:'270',tag:'SEC',cls:'tag-sec',msg:'Sybil attack: <span class="ok">DETECTED & BLOCKED</span> (CA dup-reg check)'},
+    {ts:'270',tag:'SEC',cls:'tag-sec',msg:'Spoofing attack: <span class="ok">DETECTED</span> (RSU dead-reckoning Δ=153.7m)'},
+    {ts:'270',tag:'SEC',cls:'tag-sec',msg:'FalseObs attack: <span class="ok">DETECTED</span> (peer kinematic voting)'},
+    {ts:'270',tag:'SEC',cls:'tag-sec',msg:'Privacy: real_id never on-chain. FIdv one-way hashed. ✓'},
+    {ts:'270',tag:'SEC',cls:'tag-sec',msg:'CSV log: logs/simulation_log.csv · Plots: plots/*.png'},
+    {ts:'270',tag:'SEC',cls:'tag-sec',msg:'<span class="ok">✓ SIMULATION COMPLETE</span>'},
+  ];
+
+  return buildSummaryView(logs, avgGen, avgVer);
+},
+};
+
+// ================================================================
+// HTML BUILDERS
+// ================================================================
+
+function buildStepView({panelA_title, panelA, panelB_title, panelB, logs, panelD}, headerTitle){
+  const step = STEPS[state.currentStep-1];
+  return `
+    <div class="step-header">
+      <div class="step-header-num">STEP ${step.id}/8</div>
+      <div>
+        <div class="step-header-title">${step.title}</div>
+        <div class="step-header-sub">${step.sub}</div>
+      </div>
+      <div class="step-header-spacer"></div>
+      <div class="step-badge badge-done">Complete</div>
     </div>
-    <div style="margin-top:10px;" class="data-grid">
-      ${kv('False Obstacle Detections', '~15 severe votes', 'v-warn')}
-      ${kv('Incorrect Beacons Caught', '~30 downvotes', 'v-orange')}
-      ${kv('Sybil IDs Blacklisted', 3, 'v-danger')}
-      ${kv('Spoofed Beacons Detected', '~250', 'v-danger')}
-      ${kv('Sybil Attacker Rep', '→ Untrusted', 'v-warn')}
-      ${kv('Spoofer Rep', '→ BANNED', 'v-danger')}
-    </div>
-    <div class="mono-block">[SECURITY] SYBIL DETECTED: v_p1_5 reg#2 fake_id=a3f9b2c1d4e8... BLACKLISTED
-[SECURITY] SPOOFING DETECTED: v_p2_2 reported=550.0 real=400.0 dev=150.0m spd=8.3->30.0 @t=160.0s
-[Sybil] Injected 2 fake UPVOTEs for v_p1_5 @t=121.0s  → votes DISCARDED
-[SECURITY] COMPLETENESS VIOLATION: 0 honest vehicles rejected
-[SECURITY] SOUNDNESS VIOLATION: 0 forged proofs accepted</div>`
-  );
-  markStepDone(7);
+    <div class="panels">
+      <div class="panel">
+        <div class="panel-header"><span>${panelA_title}</span></div>
+        <div class="panel-body">${panelA}</div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><span>${panelB_title}</span></div>
+        <div class="panel-body">${panelB}</div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><span>EXECUTION LOG</span><span class="spinner"></span></div>
+        <div class="panel-body" id="log-panel">${buildLogs(logs)}</div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><span>INTERMEDIATE RESULT</span></div>
+        <div class="panel-body">${panelD}</div>
+      </div>
+    </div>`;
 }
 
-async function executeStep8(){
-  markStepRunning(8);
-  log('CATS','Reputation window update — 1s interval');
-  await delay(400);
+function buildSummaryView(logs, avgGen, avgVer){
+  const step = STEPS[7];
+  const trusted = state.vehicles.filter(v=>v.state==='Trusted').length;
+  const untrusted = state.vehicles.filter(v=>v.state==='Untrusted').length;
+  const banned = state.vehicles.filter(v=>v.state==='Banned').length;
+  const barColor = (rep)=> rep>=70?'#00E4A0':rep>=40?'#F4A623':'#FF4D6A';
+  const stateClass = (s) => s==='Trusted'?'st-trusted':s==='Untrusted'?'st-untrusted':'st-banned';
 
-  // Build final reputation state
-  const repData = state.vehicles.map(v=>{
-    const isMal = (v.id === (getInputs().malVehicle!='none'?getInputs().malVehicle:'v_p1_6'));
-    const isSpoof = v.id === 'v_p2_2';
-    const isSybil = v.id === 'v_p1_5';
-    if(isMal) v.reputation = Math.max(8, v.reputation - rnd(12,18));
-    else if(isSpoof) v.reputation = Math.max(3, v.reputation - rnd(18,25));
-    else if(isSybil) v.reputation = Math.max(35, v.reputation - rnd(8,12));
-    else v.reputation = Math.min(100, v.reputation + rnd(0.5,1.2));
-    if(v.reputation>=70) v.trustState='Trusted';
-    else if(v.reputation>=40) v.trustState='Untrusted';
-    else v.trustState='Banned';
-    return v;
-  });
-
-  const banned = repData.filter(v=>v.trustState==='Banned');
-  const untrusted = repData.filter(v=>v.trustState==='Untrusted');
-  state.metrics.banned = banned.length;
-  state.metrics.votes += repData.length * 12;
-  updateMetrics(state.metrics);
-
-  banned.forEach(v=>log('CATS',`STATE_CHANGE ${v.id}: Untrusted → Banned R=${v.reputation.toFixed(1)} speed capped to 5 m/s`));
-  untrusted.forEach(v=>log('CATS',`STATE_CHANGE ${v.id}: Trusted → Untrusted tau increased to 2.5`));
-
-  function repColor(rep){
-    if(rep>=70) return 'var(--accent3)';
-    if(rep>=40) return 'var(--warn)';
-    return 'var(--danger)';
-  }
-
-  const repRows = repData.map(v=>{
-    const pct = Math.round(v.reputation);
-    const stateClass = v.trustState==='Trusted'?'state-trusted':v.trustState==='Untrusted'?'state-untrusted':'state-banned';
-    const barColor = v.trustState==='Trusted'?'var(--accent3)':v.trustState==='Untrusted'?'var(--warn)':'var(--danger)';
-    return `<div class="rep-row">
-      <span class="rep-vid">${v.id}</span>
-      <div class="rep-bar-wrap">
-        <div style="flex:1;background:var(--border);border-radius:3px;height:6px;">
-          <div class="rep-bar" style="width:${pct}%;background:${barColor};"></div>
-        </div>
-        <span class="rep-val" style="color:${repColor(v.reputation)}">${v.reputation.toFixed(1)}</span>
+  return `
+    <div class="step-header">
+      <div class="step-header-num">STEP 8/8</div>
+      <div>
+        <div class="step-header-title">Security Summary</div>
+        <div class="step-header-sub">Soundness · ZK · Timing · Logs</div>
       </div>
-      <span class="rep-state ${stateClass}">${v.trustState}</span>
+      <div class="step-header-spacer"></div>
+      <div class="step-badge badge-done">Simulation Complete</div>
+    </div>
+    <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto 1fr;overflow:hidden;gap:0;">
+      <div style="display:flex;border-bottom:1px solid var(--border);border-right:1px solid var(--border);">
+        ${[
+          {l:'Vehicles',v:state.stats.vehicles,c:'var(--cyan)'},
+          {l:'Authenticated',v:state.stats.authed,c:'var(--green)'},
+          {l:'Platoons',v:state.stats.platoons,c:'var(--amber)'},
+          {l:'Chain TXs',v:state.stats.txs,c:'var(--purple)'},
+          {l:'Attacks',v:state.stats.attacks,c:'var(--red)'},
+          {l:'Banned',v:state.stats.banned,c:'var(--pink)'},
+          {l:'Avg Proof',v:avgGen+'ms',c:'var(--teal)'},
+          {l:'Trusted',v:trusted,c:'var(--green)'},
+        ].map(s=>`
+          <div style="flex:1;border-right:1px solid var(--border);padding:10px 14px;display:flex;flex-direction:column;gap:2px;">
+            <div style="font-size:9px;font-weight:600;letter-spacing:0.12em;color:var(--text-muted);text-transform:uppercase;">${s.l}</div>
+            <div style="font-family:var(--font-mono);font-size:16px;font-weight:600;color:${s.c};">${s.v}</div>
+          </div>`).join('')}
+      </div>
+      <div style="border-bottom:1px solid var(--border);overflow-y:auto;padding:10px 14px;">
+        <div style="font-size:9px;font-weight:600;letter-spacing:0.12em;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px;">Security Checks</div>
+        ${[
+          ['Soundness (Eq21-22)','PASS','ok'],
+          ['Completeness','PASS','ok'],
+          ['Zero-Knowledge Property','PASS','ok'],
+          ['Sybil Detection','BLOCKED','ok'],
+          ['Spoof Detection','DETECTED','ok'],
+          ['FalseObs Detection','DETECTED','ok'],
+          ['Privacy (real_id off-chain)','✓ ENFORCED','ok'],
+          ['Key Rotation','2 rotations','ok'],
+        ].map(([k,v,cls])=>`
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:11px;">
+            <span style="color:var(--text-secondary);">${k}</span>
+            <span class="${cls}" style="font-family:var(--font-mono);font-size:10px;color:var(--green);">${v}</span>
+          </div>`).join('')}
+      </div>
+      <div style="border-right:1px solid var(--border);overflow-y:auto;">
+        <div class="panel-header"><span>FINAL REPUTATION</span></div>
+        <div class="panel-body">
+          ${state.vehicles.map(v=>`
+          <div class="vehicle-row" style="${v.state==='Banned'?'border-color:rgba(255,77,106,0.3);':v.state==='Untrusted'?'border-color:rgba(244,166,35,0.3);':''}">
+            <div class="vr-id" style="${v.state==='Banned'?'color:var(--red);':v.state==='Untrusted'?'color:var(--amber)':''}">${v.id}</div>
+            <div class="vr-bar-wrap"><div class="vr-bar" style="width:${v.rep}%;background:${barColor(v.rep)};"></div></div>
+            <div class="vr-score">${v.rep}</div>
+            <div class="vr-state ${stateClass(v.state)}">${v.state}</div>
+          </div>`).join('')}
+        </div>
+      </div>
+      <div style="overflow-y:auto;">
+        <div class="panel-header"><span>SIMULATION LOG</span></div>
+        <div class="panel-body">${buildLogs(logs)}</div>
+      </div>
+    </div>`;
+}
+
+function buildLogs(logs){
+  return logs.map(l=>`
+    <div class="log-entry">
+      <div class="log-ts">${l.ts}</div>
+      <div class="log-tag ${l.cls}">${l.tag}</div>
+      <div class="log-msg">${l.msg}</div>
+    </div>`).join('');
+}
+
+function buildNoChart(){
+  return `<div style="display:flex;align-items:center;justify-content:center;height:80px;color:var(--text-muted);font-size:12px;">Chart generated at completion</div>`;
+}
+
+// ================================================================
+// PIPELINE RENDERING
+// ================================================================
+
+function renderPipeline(){
+  const container = document.getElementById('pipeline-steps');
+  container.innerHTML = STEPS.map(s=>{
+    let cls = '';
+    if(s.id === state.currentStep) cls = 'active';
+    else if(state.doneSteps.has(s.id)) cls = 'done';
+    return `<div class="step-item ${cls}" onclick="jumpToStep(${s.id})">
+      <div class="step-num">${state.doneSteps.has(s.id)?'✓':s.id}</div>
+      <div class="step-info">
+        <div class="step-title">${s.title}</div>
+        <div class="step-sub">${s.sub}</div>
+      </div>
     </div>`;
   }).join('');
-
-  addResult(
-    `<span class="rh-tag tag-cats">REPUTATION</span><span class="rh-title">Trust State Enforcement — Vote Aggregation Window T≈210s</span>`,
-    `<div class="data-grid">
-      ${kv('Trusted Vehicles', repData.filter(v=>v.trustState==='Trusted').length, 'v-green')}
-      ${kv('Untrusted', untrusted.length, 'v-warn')}
-      ${kv('Banned', banned.length, 'v-danger')}
-      ${kv('Upvote Threshold', '70%', 'v-accent')}
-      ${kv('Upvote Reward', '+1.0 rep', 'v-green')}
-      ${kv('Severe Penalty', '−15 rep', 'v-danger')}
-    </div>
-    <div style="margin-top:8px;">
-      <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:8px;">VEHICLE REPUTATION SCORES</div>
-      ${repRows}
-    </div>
-    <div style="margin-top:8px;font-size:11px;color:var(--muted);">Trust actions applied via SUMO TraCI:
-      <span style="color:var(--accent3);">Trusted → tau=1.0</span> |
-      <span style="color:var(--warn);">Untrusted → tau=2.5</span> |
-      <span style="color:var(--danger);">Banned → speed=5 m/s</span>
-    </div>`
-  );
-  markStepDone(8);
+  document.getElementById('step-counter').textContent = `${state.doneSteps.size}/8`;
+  document.getElementById('progress-bar').style.width = `${(state.doneSteps.size/8)*100}%`;
 }
 
-async function executeStep9(){
-  const cfg = getInputs();
-  markStepRunning(9);
-  const bcEnabled = cfg.blockchain !== 'disabled';
-
-  log('BLOCK','Flushing final reputation to CATS.sol…');
-  log('DB','Batch-inserting vote records to PostgreSQL…');
-  log('DB','Batch-inserting reputation_history records…');
-  log('INFO','Flushing security_events.csv…');
-  log('INFO','Generating plots: reputation_over_time.png, trust_state_timeline.png, vote_distribution.png');
-  await delay(600);
-
-  const totalVeh = cfg.p1Size + cfg.p2Size;
-  const txCount = totalVeh * 3;
-  state.metrics.chainTx += txCount;
-  updateMetrics(state.metrics);
-
-  const dbRows = totalVeh * 45;
-
-  log('INFO',`Simulation complete! Check logs/ plots/ PostgreSQL for results.`);
-
-  addResult(
-    `<span class="rh-tag tag-db">DB + CHAIN</span><span class="rh-title">Final Flush — Blockchain, PostgreSQL, CSV, Plots</span>`,
-    `<div class="data-grid">
-      ${kv('On-Chain Rep Updates', txCount, 'v-orange')}
-      ${kv('DB Rows (votes)', dbRows, 'v-purple')}
-      ${kv('DB Rows (rep hist)', totalVeh*270, 'v-purple')}
-      ${kv('CSV Log', 'simulation_log.csv', 'v-green')}
-      ${kv('Security Log', 'security_events.csv', 'v-warn')}
-      ${kv('Plots Generated', 3, 'v-accent')}
-    </div>
-    <div class="mono-block">[Blockchain] Final on-chain reputation sync…
-${state.vehicles.map(v=>`  ${v.id} → R=${v.reputation.toFixed(1)} (${v.trustState}) on-chain`).join('\n')}
-
-[DBVoteLogger] flush: ${dbRows} vote rows → PostgreSQL vehicle_votes
-[DBVoteLogger] flush: ${totalVeh*270} rep rows → PostgreSQL reputation_history
-[SecLog] logs/security_events.csv flushed (${state.metrics.attacks*12} events)
-[CATS Plotter] Saved: plots/reputation_over_time.png
-[CATS Plotter] Saved: plots/trust_state_timeline.png
-[CATS Plotter] Saved: plots/vote_distribution.png</div>
-    <div class="data-grid" style="margin-top:8px;">
-      ${kv('Proof Gen Avg (Fig 3)', state.metrics.proofMs.toFixed(3)+' ms', 'v-accent')}
-      ${kv('CA Verify Avg (Fig 4)', (state.metrics.proofMs/2.5).toFixed(3)+' ms', 'v-green')}
-      ${kv('Soundness Violations', 0, 'v-green')}
-      ${kv('Completeness Violations', 0, 'v-green')}
-      ${kv('ZK Leakages', 0, 'v-green')}
-      ${kv('Sybil IDs Blacklisted', 3, 'v-danger')}
-    </div>`
-  );
-  markStepDone(9);
+function updateStats(){
+  document.getElementById('s-vehicles').textContent = state.stats.vehicles;
+  document.getElementById('s-authed').textContent   = state.stats.authed;
+  document.getElementById('s-platoons').textContent = state.stats.platoons;
+  document.getElementById('s-attacks').textContent  = state.stats.attacks;
+  document.getElementById('s-txs').textContent      = state.stats.txs;
+  document.getElementById('s-banned').textContent   = state.stats.banned;
+  document.getElementById('s-proof').textContent    = state.stats.proof;
 }
 
-// ============================================================
-// RUN CONTROLS
-// ============================================================
-function delay(ms){ return new Promise(r=>setTimeout(r,ms)); }
+function updateClock(){
+  document.getElementById('sim-clock').textContent = state.simTime.toFixed(1)+'s';
+}
 
-let currentStepRunner = null;
-const stepRunners = [null, executeStep1, executeStep2, executeStep3, executeStep4, executeStep5, executeStep6, executeStep7, executeStep8, executeStep9];
+// ================================================================
+// SIMULATION CONTROL
+// ================================================================
 
-async function runCurrentStep(){
+let stepIdx = 0;
+
+function runStep(){
   if(state.running) return;
-  if(!state.currentStep){ activateStep(1); }
-  const n = state.currentStep;
-  state.running = true;
-  setStatus('RUNNING');
-  document.getElementById('runStepBtn').disabled = true;
-  document.getElementById('runAllBtn').disabled = true;
-  startSimClock();
-  try{
-    await stepRunners[n]();
-  }catch(e){ log('ERROR','Step failed: '+e.message); setStatus('ERROR'); }
-  state.running = false;
-  document.getElementById('runStepBtn').disabled = false;
-  document.getElementById('runAllBtn').disabled = false;
-  setStatus('DONE');
-  updateProgress();
+  if(stepIdx >= 8){ showToast('Simulation complete!'); return; }
+  executeStep(stepIdx+1);
 }
 
-async function runAllSteps(){
+function runAll(){
   if(state.running) return;
+  if(stepIdx >= 8){ showToast('Reset first.'); return; }
   state.running = true;
-  setStatus('RUNNING');
-  document.getElementById('runAllBtn').disabled = true;
-  document.getElementById('runStepBtn').disabled = true;
-  startSimClock();
-  for(let i=1;i<=9;i++){
-    activateStep(i);
-    await delay(100);
-    try{ await stepRunners[i](); }
-    catch(e){ log('ERROR',`Step ${i} failed: ${e.message}`); }
-    updateProgress();
-    await delay(150);
+  document.getElementById('btn-run-all').disabled = true;
+  runAllLoop();
+}
+
+async function runAllLoop(){
+  while(stepIdx < 8){
+    executeStep(stepIdx+1);
+    await delay(800);
   }
   state.running = false;
-  document.getElementById('runAllBtn').disabled = false;
-  document.getElementById('runStepBtn').disabled = false;
-  setStatus('DONE');
-  stopSimClock();
+  document.getElementById('btn-run-all').disabled = false;
 }
 
-function updateProgress(){
-  const done = state.completedSteps.size;
-  document.getElementById('simProgressFill').style.width = (done/9*100)+'%';
+function executeStep(n){
+  state.currentStep = n;
+  state.doneSteps.add(n);
+  stepIdx = n;
+  renderPipeline();
+  const html = STEP_EXECUTORS[n]();
+  const ca = document.getElementById('content-area');
+  ca.innerHTML = html;
+  updateStats();
+  updateClock();
+}
+
+function jumpToStep(n){
+  if(n <= stepIdx){
+    state.currentStep = n;
+    renderPipeline();
+    const html = STEP_EXECUTORS[n]();
+    document.getElementById('content-area').innerHTML = html;
+  }
 }
 
 function resetSim(){
-  state.completedSteps.clear();
-  state.currentStep = null;
-  state.running = false;
-  state.simTime = 0;
-  state.metrics = {vehicles:0,authenticated:0,platoons:0,attacks:0,chainTx:0,votes:0,banned:0,proofMs:0};
-  stopSimClock();
-  document.querySelectorAll('.pipe-step').forEach(el=>el.classList.remove('done','running','active'));
-  document.getElementById('resultsArea').innerHTML = `<div class="empty-state" id="emptyState"><div class="es-icon">⬡</div><p>Configure inputs above, select a pipeline step from the left panel, then click <strong>Execute Step</strong> — or click <strong>Run Full Simulation</strong>.</p></div>`;
-  document.getElementById('simProgressFill').style.width='0%';
-  document.getElementById('simClock').textContent='T = 0.0s';
-  document.getElementById('activeStepBadge').textContent='Step — / 9';
-  document.getElementById('activeStepName').textContent='Select a pipeline step or run all';
-  updateMetrics(state.metrics);
-  setStatus('READY');
-  clearLog();
-  document.getElementById('runAllBtn').disabled = false;
-  document.getElementById('runStepBtn').disabled = false;
+  state = {
+    currentStep:0, doneSteps:new Set(), running:false,
+    stats:{vehicles:0,authed:0,platoons:0,attacks:0,txs:0,banned:0,proof:'—'},
+    vehicles: VEHICLES.map(v=>({...v,rep:70,state:'Trusted',fakeId:'',proof:'',authed:false,trust:0})),
+    ca:{pk:'',sk:'',vk:'',rotations:0}, chainTxs:[], repHistory:[], simTime:0, logs:[],
+  };
+  stepIdx = 0;
+  renderPipeline(); updateStats(); updateClock();
+  document.getElementById('btn-run-all').disabled = false;
+  document.getElementById('content-area').innerHTML = `
+    <div id="welcome">
+      <div class="welcome-icon">🛡</div>
+      <div class="welcome-title">ZKP Platoon Security Simulator</div>
+      <div class="welcome-sub">Simulates the full 8-step pipeline: CA key generation, ZKP vehicle authentication, blockchain trust initialisation, CATS reputation management, platoon operations, attack injection, reputation update, and security summary.</div>
+      <div class="welcome-hint">Press ▶ Run Simulation or Step → to begin</div>
+    </div>`;
 }
 
-// Sim clock
-function startSimClock(){
-  if(state.simTimer) clearInterval(state.simTimer);
-  state.simTimer = setInterval(()=>{
-    if(state.running){
-      state.simTime = Math.min(state.simTime + 0.5, getInputs().simDur);
-      document.getElementById('simClock').textContent = `T = ${state.simTime.toFixed(1)}s`;
-    }
-  }, 100);
-}
-function stopSimClock(){ if(state.simTimer){ clearInterval(state.simTimer); state.simTimer=null; } }
+function delay(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
-// Initial state
-log('INFO','Dashboard ready — configure inputs and run simulation pipeline');
-log('INFO','Monitoring: ZKP Auth · CATS Trust · Blockchain · SUMO platoon · Attacks');
+function showToast(msg){
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:20px;right:20px;background:var(--bg-card2);border:1px solid var(--border2);color:var(--text-primary);padding:10px 16px;border-radius:8px;font-size:12px;z-index:999;';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 2000);
+}
+
+// ================================================================
+// INIT
+// ================================================================
+renderPipeline();
 </script>
 </body>
 </html>

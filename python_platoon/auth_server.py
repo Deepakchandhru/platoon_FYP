@@ -97,7 +97,7 @@ def build_merkle(commitment, all_commitments):
     root = str(resp.json()["hash"])
 
     print(resp.json())
-    print( {
+    print({
         "pathElements": [str(sibling)],
         "pathIndices": [path_index],
         "merkle_root": root
